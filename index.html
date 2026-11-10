@@ -3,47 +3,53 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Игровой Центр</title>
+<title>Игровой Центр PRO</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; user-select: none; }
-  body { background: #f0f2f5; color: #1a1a1a; overflow: hidden; }
+  body { background: #1a1a2e; color: #fff; overflow: hidden; }
 
   /* --- ГЛАВНОЕ МЕНЮ --- */
   #menu { padding: 16px; height: 100vh; overflow-y: auto; }
   header { text-align: center; padding: 20px 0; }
-  header h1 { font-size: 26px; margin-bottom: 6px; }
+  header h1 { font-size: 26px; margin-bottom: 6px; color: #fff; }
   
   .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; max-width: 600px; margin: 0 auto; padding-bottom: 20px; }
-  .card { background: #fff; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); cursor: pointer; transition: transform 0.15s; text-align: center; padding-bottom: 12px;}
-  .card:active { transform: scale(0.95); }
-  .card .emoji { font-size: 50px; padding: 20px 0; background: #e8f0ff; }
-  .card .name { font-weight: 600; font-size: 14px; margin-top: 10px; }
+  .card { background: #16213e; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); cursor: pointer; transition: transform 0.15s; text-align: center; padding-bottom: 12px; border: 1px solid #0f3460;}
+  .card:active { transform: scale(0.95); background: #0f3460; }
+  .card .emoji { font-size: 50px; padding: 20px 0; background: #0f3460; border-radius: 16px 16px 0 0;}
+  .card .name { font-weight: 600; font-size: 14px; margin-top: 10px; color: #e94560; }
 
   /* --- ЭКРАНЫ ИГР --- */
-  .game-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #fff; z-index: 100; display: none; flex-direction: column; }
-  .game-header { height: 50px; background: #229ED9; color: white; display: flex; align-items: center; padding: 0 16px; font-size: 16px; font-weight: bold; flex-shrink: 0; justify-content: space-between;}
-  .back-btn { background: none; border: none; color: white; font-size: 24px; margin-right: 16px; cursor: pointer; }
-  .game-content { flex: 1; position: relative; overflow: hidden; background: #e0f6ff; }
-  .score-text { position: absolute; top: 10px; left: 10px; font-size: 20px; font-weight: bold; color: #333; z-index: 10; text-shadow: 1px 1px 0 #fff;}
+  .game-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #1a1a2e; z-index: 100; display: none; flex-direction: column; }
+  .game-header { height: 50px; background: #0f3460; color: white; display: flex; align-items: center; padding: 0 16px; font-size: 16px; font-weight: bold; flex-shrink: 0; justify-content: space-between; border-bottom: 2px solid #e94560;}
+  .back-btn { background: none; border: none; color: #e94560; font-size: 24px; margin-right: 16px; cursor: pointer; }
+  .game-content { flex: 1; position: relative; overflow: hidden; background: #16213e; }
+  .score-text { position: absolute; top: 10px; left: 10px; font-size: 20px; font-weight: bold; color: #fff; z-index: 10; text-shadow: 1px 1px 0 #000;}
 
-  /* Кнопка выключения звука */
-  .mute-btn { background: none; border: none; color: white; font-size: 20px; cursor: pointer; }
+  .mute-btn { background: none; border: none; color: #e94560; font-size: 20px; cursor: pointer; }
 
   /* --- ИГРА: КОТ --- */
   .cat { position: absolute; font-size: 50px; cursor: crosshair; }
 
-  /* --- ИГРА: РАННЕР (GD) --- */
+  /* --- ИГРА: РАННЕР --- */
   #runnerContainer { background: #1a1a2e; }
   #runnerCanvas { display: block; width: 100%; height: 100%; }
   
-  #levelsMenu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 20; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+  #levelsMenu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 20; display: flex; flex-direction: column; justify-content: center; align-items: center; }
   .level-btn { width: 80%; max-width: 300px; padding: 15px; margin: 10px 0; background: #0f3460; border: 2px solid #e94560; color: white; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
   .level-btn:active { background: #e94560; }
   .level-btn.locked { background: #333; border-color: #555; color: #777; cursor: not-allowed; }
 
+  /* Магазин скинов */
+  #skinsMenu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 25; display: none; flex-direction: column; justify-content: center; align-items: center; }
+  .skin-btn { width: 80%; max-width: 300px; padding: 15px; margin: 5px 0; background: #16213e; border: 2px solid #fff; color: white; border-radius: 10px; font-size: 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;}
+  .skin-btn.owned { border-color: #2ed573; }
+  .skin-btn.active-skin { border-color: #e94560; background: #0f3460; }
+
   /* --- ИГРА 3: САПЁР --- */
   #sapperBoard { display: grid; grid-template-columns: repeat(8, 35px); gap: 2px; background: #999; padding: 4px; margin: 40px auto; width: fit-content; border-radius: 8px;}
-  .cell { width: 35px; height: 35px; background: #ddd; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 18px; cursor: pointer; border-radius: 4px; }
+  .cell { width: 35px; height: 35px; background: #ddd; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 18px; cursor: pointer; border-radius: 4px; color: #000;}
   .cell.revealed { background: #eee; cursor: default; }
   .cell.flag { color: red; }
   .cell.mine { background: red; color: white; }
@@ -54,189 +60,246 @@
   /* --- ИГРА 5: WALKICKERS --- */
   #walkCanvas { display: block; width: 100%; height: 100%; background: #87CEEB; }
 
-  /* Оверлей Game Over */
-  .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 50; text-align: center; }
-  .overlay h2 { font-size: 30px; margin-bottom: 15px; }
-  .overlay button { padding: 12px 24px; font-size: 18px; border-radius: 10px; border: none; background: #229ED9; color: white; font-weight: bold; margin: 5px; }
+  /* --- ИГРА 6: МАЙНКРАФТ --- */
+  #minecraftCanvas { display: block; width: 100%; height: 100%; background: #87CEEB; }
+  #mcControls { position: absolute; bottom: 20px; left: 0; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; z-index: 10; }
+  .mc-btn { width: 60px; height: 60px; border-radius: 50%; background: rgba(0,0,0,0.5); color: white; border: 2px solid white; font-size: 24px; display: flex; justify-content: center; align-items: center; font-weight: bold; }
+  .mc-btn:active { background: rgba(0,0,0,0.8); }
+  .mc-inventory { position: absolute; top: 60px; right: 10px; display: flex; flex-direction: column; gap: 10px; z-index: 10; }
+  .mc-item { width: 40px; height: 40px; border: 2px solid white; display: flex; justify-content: center; align-items: center; font-size: 24px; cursor: pointer; }
+  .mc-item.active { border-color: #ff4757; transform: scale(1.1); }
 
+  /* Оверлей Game Over */
+  .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 50; text-align: center; }
+  .overlay h2 { font-size: 30px; margin-bottom: 15px; color: #e94560;}
+  .overlay button { padding: 12px 24px; font-size: 18px; border-radius: 10px; border: none; background: #0f3460; color: white; font-weight: bold; margin: 5px; cursor: pointer; border: 1px solid #e94560;}
+  .btn-send { background: #2ed573 !important; border-color: #2ed573 !important; }
+  .btn-share { background: #f39c12 !important; border-color: #f39c12 !important;}
 </style>
 </head>
 <body>
 
 <!-- ГЛАВНОЕ МЕНЮ -->
 <div id="menu">
-  <header><h1>🕹️ Игровой Центр</h1></header>
+  <header><h1>🕹️ Игровой Центр PRO</h1><p style="color:#aaa; font-size:12px;">Монеты: <span id="globalCoins">0</span> 🪙</p></header>
   <div class="grid">
-    <div class="card" onclick="openGame('cat')"><div class="emoji">🐈</div><div class="name">Поймай Кота</div></div>
-    <div class="card" onclick="openGame('runner')"><div class="emoji">🟨</div><div class="name">Кубик-Раннер</div></div>
-    <div class="card" onclick="openGame('sapper')"><div class="emoji">💣</div><div class="name">Сапёр</div></div>
-    <div class="card" onclick="openGame('snake')"><div class="emoji">🐍</div><div class="name">Змейка</div></div>
-    <div class="card" onclick="openGame('walk')"><div class="emoji">🏃</div><div class="name">Прыгуны</div></div>
+    <div class="card" onclick="playClick(); openGame('cat')"><div class="emoji">🐈</div><div class="name">Поймай Кота</div></div>
+    <div class="card" onclick="playClick(); openGame('runner')"><div class="emoji">🟨</div><div class="name">Геометри Даш</div></div>
+    <div class="card" onclick="playClick(); openGame('sapper')"><div class="emoji">💣</div><div class="name">Сапёр</div></div>
+    <div class="card" onclick="playClick(); openGame('snake')"><div class="emoji">🐍</div><div class="name">Змейка</div></div>
+    <div class="card" onclick="playClick(); openGame('walk')"><div class="emoji">🏃</div><div class="name">Прыгуны</div></div>
+    <div class="card" onclick="playClick(); openGame('minecraft')"><div class="emoji">⛏️</div><div class="name">2D Крафт</div></div>
   </div>
 </div>
 
 <!-- ЭКРАН: КОТ -->
 <div id="screen-cat" class="game-screen">
-  <div class="game-header">
-    <div><button class="back-btn" onclick="closeGame()">←</button> Поймай Кота</div>
-    <button class="mute-btn" onclick="toggleMute()">🔊</button>
-  </div>
+  <div class="game-header"><div><button class="back-btn" onclick="closeGame()">←</button> Поймай Кота</div><button class="mute-btn" onclick="toggleMute()">🔊</button></div>
   <div class="game-content" id="catContainer">
     <div class="score-text" id="catScore">Очки: 0 | Время: 30</div>
     <div id="catGameArea" style="width:100%; height:100%; position:relative;"></div>
-    <div class="overlay" id="catOver"><h2>Игра окончена!</h2><button onclick="startCat()">Ещё раз</button></div>
+    <div class="overlay" id="catOver">
+      <h2 id="catFinalScore">Игра окончена!</h2>
+      <button class="btn-send" onclick="sendScore('cat', catScore)">🏆 Отправить боту</button>
+      <button class="btn-share" onclick="shareScore('cat', catScore)">📢 Поделиться</button>
+      <button onclick="startCat()">Ещё раз</button>
+    </div>
   </div>
 </div>
 
 <!-- ЭКРАН: РАННЕР -->
 <div id="screen-runner" class="game-screen">
-  <div class="game-header">
-    <div><button class="back-btn" onclick="closeGame()">←</button> Геометри Даш</div>
-    <button class="mute-btn" onclick="toggleMute()">🔊</button>
-  </div>
+  <div class="game-header"><div><button class="back-btn" onclick="closeGame()">←</button> Геометри Даш</div><button class="mute-btn" onclick="toggleMute()">🔊</button></div>
   <div class="game-content" id="runnerContainer">
-    <div class="score-text" id="runnerScore" style="color:white; text-shadow:none;">0%</div>
+    <div class="score-text" id="runnerScore" style="color:white;">0%</div>
     <canvas id="runnerCanvas"></canvas>
     
     <div id="levelsMenu">
-      <h2 style="color:white; margin-bottom:20px;">Выбери уровень</h2>
-      <button class="level-btn" onclick="startRunner(1)"><span>Уровень 1</span> <span>⭐</span></button>
-      <button class="level-btn" id="lvl2Btn" onclick="startRunner(2)"><span>Уровень 2</span> <span id="lock2">🔒</span></button>
-      <button class="level-btn" id="lvl3Btn" onclick="startRunner(3)"><span>Уровень 3</span> <span id="lock3">🔒</span></button>
+      <h2 style="color:white; margin-bottom:20px;">Геометри Даш</h2>
+      <p style="color:#2ed573; margin-bottom:15px;">Монеты: <span id="runnerCoins">0</span> 🪙</p>
+      <button class="level-btn" onclick="startRunner(1)"><span>Уровень 1 (Легкий)</span> <span>⭐</span></button>
+      <button class="level-btn" id="lvl2Btn" onclick="startRunner(2)"><span>Уровень 2 (Средний)</span> <span id="lock2">🔒</span></button>
+      <button class="level-btn" id="lvl3Btn" onclick="startRunner(3)"><span>Уровень 3 (Сложный)</span> <span id="lock3">🔒</span></button>
+      <button class="level-btn" onclick="openSkins()" style="border-color:#2ed573; margin-top:20px;">🎨 Магазин скинов</button>
+    </div>
+
+    <div id="skinsMenu">
+      <h2 style="color:white; margin-bottom:20px;">Скины кубика</h2>
+      <button class="skin-btn" onclick="buySkin(0, 0)"><span>Обычный (Желтый)</span> <span>Выбрать</span></button>
+      <button class="skin-btn" id="skin1Btn" onclick="buySkin(1, 50)"><span>Красный</span> <span id="skin1Text">50 🪙</span></button>
+      <button class="skin-btn" id="skin2Btn" onclick="buySkin(2, 100)"><span>Синий</span> <span id="skin2Text">100 🪙</span></button>
+      <button class="level-btn" onclick="closeSkins()" style="margin-top:20px; border-color:#e94560;">Назад</button>
     </div>
 
     <div class="overlay" id="runnerOver">
-      <h2>Ты врезался в шипы!</h2>
+      <h2 id="runnerFinalScore">Ты врезался!</h2>
+      <button class="btn-send" onclick="sendScore('runner', Math.floor(progress))">🏆 Отправить боту</button>
+      <button class="btn-share" onclick="shareScore('runner', Math.floor(progress))">📢 Поделиться</button>
       <button onclick="startRunner(currentLevel)">Заново</button>
-      <button onclick="showLevels()" style="background:#555;">К уровням</button>
+      <button onclick="showLevels()" style="background:#555; border:none;">К уровням</button>
     </div>
     <div class="overlay" id="runnerWin" style="background:rgba(46, 213, 115, 0.9);">
       <h2>Уровень пройден!</h2>
+      <button class="btn-send" onclick="sendScore('runner', 100)">🏆 Отправить боту</button>
       <button onclick="nextLevel()">Дальше</button>
-      <button onclick="showLevels()" style="background:#555;">К уровням</button>
     </div>
   </div>
 </div>
 
 <!-- ЭКРАН: САПЁР -->
 <div id="screen-sapper" class="game-screen">
-  <div class="game-header">
-    <div><button class="back-btn" onclick="closeGame()">←</button> Сапёр</div>
-    <button class="mute-btn" onclick="toggleMute()">🔊</button>
-  </div>
+  <div class="game-header"><div><button class="back-btn" onclick="closeGame()">←</button> Сапёр</div><button class="mute-btn" onclick="toggleMute()">🔊</button></div>
   <div class="game-content" style="background: #fff; overflow-y: auto;">
-    <div class="score-text" style="color:black">Осталось флажков: <span id="flagsLeft">10</span></div>
+    <div class="score-text" style="color:black">Флажков: <span id="flagsLeft">10</span></div>
     <div id="sapperBoard"></div>
-    <div class="overlay" id="sapperOver"><h2 id="sapperMsg">Бум!</h2><button onclick="startSapper()">Заново</button></div>
+    <div class="overlay" id="sapperOver">
+      <h2 id="sapperMsg">Бум!</h2>
+      <button class="btn-send" onclick="sendScore('sapper', sapperRevealed)">🏆 Отправить боту</button>
+      <button class="btn-share" onclick="shareScore('sapper', sapperRevealed)">📢 Поделиться</button>
+      <button onclick="startSapper()">Заново</button>
+    </div>
   </div>
 </div>
 
 <!-- ЭКРАН: ЗМЕЙКА -->
 <div id="screen-snake" class="game-screen">
-  <div class="game-header">
-    <div><button class="back-btn" onclick="closeGame()">←</button> Змейка</div>
-    <button class="mute-btn" onclick="toggleMute()">🔊</button>
-  </div>
+  <div class="game-header"><div><button class="back-btn" onclick="closeGame()">←</button> Змейка</div><button class="mute-btn" onclick="toggleMute()">🔊</button></div>
   <div class="game-content">
     <div class="score-text" style="color:white">Счёт: <span id="snakeScore">0</span></div>
     <canvas id="snakeCanvas"></canvas>
-    <div class="overlay" id="snakeOver"><h2>Ты проиграл!</h2><button onclick="startSnake()">Заново</button></div>
+    <div class="overlay" id="snakeOver">
+      <h2>Ты проиграл!</h2>
+      <button class="btn-send" onclick="sendScore('snake', snakeScore)">🏆 Отправить боту</button>
+      <button class="btn-share" onclick="shareScore('snake', snakeScore)">📢 Поделиться</button>
+      <button onclick="startSnake()">Заново</button>
+    </div>
   </div>
 </div>
 
 <!-- ЭКРАН: WALKICKERS -->
 <div id="screen-walk" class="game-screen">
-  <div class="game-header">
-    <div><button class="back-btn" onclick="closeGame()">←</button> Прыгуны</div>
-    <button class="mute-btn" onclick="toggleMute()">🔊</button>
-  </div>
+  <div class="game-header"><div><button class="back-btn" onclick="closeGame()">←</button> Прыгуны</div><button class="mute-btn" onclick="toggleMute()">🔊</button></div>
   <div class="game-content" id="walkContainer">
     <div class="score-text">Дистанция: <span id="walkScore">0</span></div>
     <canvas id="walkCanvas"></canvas>
-    <div class="overlay" id="walkOver"><h2>Ты упал!</h2><button onclick="startWalk()">Заново</button></div>
+    <div class="overlay" id="walkOver">
+      <h2>Ты упал!</h2>
+      <button class="btn-send" onclick="sendScore('walk', walkScore)">🏆 Отправить боту</button>
+      <button class="btn-share" onclick="shareScore('walk', walkScore)">📢 Поделиться</button>
+      <button onclick="startWalk()">Заново</button>
+    </div>
   </div>
 </div>
 
+<!-- ЭКРАН: МАЙНКРАФТ -->
+<div id="screen-minecraft" class="game-screen">
+  <div class="game-header"><div><button class="back-btn" onclick="closeGame()">←</button> 2D Крафт</div><button class="mute-btn" onclick="toggleMute()">🔊</button></div>
+  <div class="game-content">
+    <canvas id="minecraftCanvas"></canvas>
+    <div id="mcControls">
+      <div class="mc-btn" id="btn-left">◀</div>
+      <div class="mc-btn" id="btn-jump">⬆</div>
+      <div class="mc-btn" id="btn-right">▶</div>
+    </div>
+    <div class="mc-inventory">
+      <div class="mc-item active" id="item-dirt" onclick="selectBlock('dirt', '#8B4513')">🟫</div>
+      <div class="mc-item" id="item-stone" onclick="selectBlock('stone', '#808080')">⬜</div>
+      <div class="mc-item" id="item-grass" onclick="selectBlock('grass', '#228B22')">🟩</div>
+      <div class="mc-item" id="item-water" onclick="selectBlock('water', '#3498db')">💧</div>
+      <div class="mc-item" id="item-lava" onclick="selectBlock('lava', '#e74c3c')">🔥</div>
+    </div>
+  </div>
+</div>
 
 <script>
 // ==========================================
-// МУЗЫКАЛЬНЫЙ ДВИЖОК (8-БИТ)
+// ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ (МОНЕТЫ)
 // ==========================================
-let audioCtx;
-let isMuted = false;
-let musicInterval;
-let currentMelody = [];
-let noteIndex = 0;
+let coins = parseInt(localStorage.getItem('global_coins')) || 0;
+let currentSkin = parseInt(localStorage.getItem('gd_skin')) || 0;
+let ownedSkins = JSON.parse(localStorage.getItem('gd_owned_skins')) || [0];
+const SKIN_COLORS = ["#FFD700", "#e94560", "#3498db"]; // Желтый, Красный, Синий
 
-// Ноты (частоты)
-const NOTES = {
-  C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392.00, A4: 440.00, B4: 493.88,
-  C5: 523.25, D5: 587.33, E5: 659.25, F5: 698.46, G5: 783.99, A5: 880.00,
-  REST: 0
-};
-
-function initAudio() {
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  }
-  if (audioCtx.state === 'suspended') {
-    audioCtx.resume();
-  }
+function updateCoinsUI() {
+  document.getElementById('globalCoins').textContent = coins;
+  document.getElementById('runnerCoins').textContent = coins;
+  localStorage.setItem('global_coins', coins);
 }
 
-function playNote(freq, duration) {
+function addCoins(amount) {
+  coins += amount;
+  updateCoinsUI();
+}
+
+updateCoinsUI();
+
+// ==========================================
+// ЗВУКОВОЙ ДВИЖОК
+// ==========================================
+let audioCtx; let isMuted = false; let musicInterval; let currentMelody = []; let noteIndex = 0;
+const NOTES = { C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392.00, A4: 440.00, B4: 493.88, C5: 523.25, D5: 587.33, E5: 659.25, F5: 698.46, G5: 783.99, A5: 880.00, REST: 0 };
+
+function initAudio() { 
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); 
+  if (audioCtx.state === 'suspended') audioCtx.resume(); 
+}
+
+function playTone(freq, type, duration, vol=0.05) {
   if (isMuted || freq === 0) return;
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  
-  osc.type = 'square'; // Квадратная волна = 8-битный звук
-  osc.frequency.value = freq;
-  
-  gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+  initAudio();
+  const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+  osc.type = type; osc.frequency.value = freq;
+  gain.gain.setValueAtTime(vol, audioCtx.currentTime); 
   gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-  
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  
-  osc.start();
-  osc.stop(audioCtx.currentTime + duration);
+  osc.connect(gain); gain.connect(audioCtx.destination); 
+  osc.start(); osc.stop(audioCtx.currentTime + duration);
 }
+
+function playClick() { playTone(800, 'sine', 0.1, 0.1); }
+function playDeath() { playTone(150, 'sawtooth', 0.3, 0.1); setTimeout(()=>playTone(100, 'sawtooth', 0.4, 0.1), 100); }
+function playMeow() { playTone(600, 'sine', 0.2, 0.1); setTimeout(()=>playTone(800, 'sine', 0.3, 0.1), 150); }
 
 function startMusic(melody, tempo = 150) {
-  initAudio();
-  stopMusic();
-  currentMelody = melody;
-  noteIndex = 0;
-  const beatDuration = 60000 / tempo;
-  
+  initAudio(); stopMusic(); currentMelody = melody; noteIndex = 0; const beatDuration = 60000 / tempo;
   musicInterval = setInterval(() => {
     if (isMuted) return;
-    let note = currentMelody[noteIndex];
-    if (note !== "REST") {
-      playNote(NOTES[note], beatDuration / 1000);
-    }
+    let note = currentMelody[noteIndex]; if (note !== "REST") playTone(NOTES[note], 'square', beatDuration / 1000, 0.03);
     noteIndex = (noteIndex + 1) % currentMelody.length;
   }, beatDuration);
 }
+function stopMusic() { clearInterval(musicInterval); }
+function toggleMute() { isMuted = !isMuted; document.querySelectorAll('.mute-btn').forEach(btn => btn.textContent = isMuted ? '🔇' : '🔊'); }
 
-function stopMusic() {
-  clearInterval(musicInterval);
-}
-
-function toggleMute() {
-  isMuted = !isMuted;
-  document.querySelectorAll('.mute-btn').forEach(btn => {
-    btn.textContent = isMuted ? '🔇' : '🔊';
-  });
-}
-
-// Мелодии для игр
 const MELODY_CAT = ["C4", "E4", "G4", "E4", "C4", "E4", "G4", "E4", "F4", "A4", "C5", "A4", "F4", "A4", "C5", "A4"];
-const MELODY_RUNNER = ["E4", "E4", "REST", "E4", "REST", "C4", "E4", "REST", "G4", "REST", "REST", "REST", "G4", "REST", "REST", "REST"]; // Как в Марио
-const MELODY_SAPPER = ["C4", "REST", "G4", "REST", "C4", "REST", "G4", "REST"]; // Спокойная
-const MELODY_SNAKE = ["A4", "C5", "E5", "A5", "E5", "C5", "A4", "REST"]; // Быстрая
-const MELODY_WALK = ["C4", "D4", "E4", "G4", "C5", "G4", "E4", "D4"]; // Веселая
+const MELODY_RUNNER = ["E4", "E4", "REST", "E4", "REST", "C4", "E4", "REST", "G4", "REST", "REST", "REST", "G4", "REST", "REST", "REST"]; 
+const MELODY_SAPPER = ["C4", "REST", "G4", "REST", "C4", "REST", "G4", "REST"]; 
+const MELODY_SNAKE = ["A4", "C5", "E5", "A5", "E5", "C5", "A4", "REST"]; 
+const MELODY_WALK = ["C4", "D4", "E4", "G4", "C5", "G4", "E4", "D4"]; 
+const MELODY_MC = ["C4", "REST", "E4", "REST", "G4", "REST", "C5", "REST"];
 
+// ==========================================
+// ОТПРАВКА И ШЕРИНГ
+// ==========================================
+function sendScore(gameName, score) {
+  playClick();
+  if (window.Telegram && window.Telegram.WebApp) {
+    window.Telegram.WebApp.sendData(gameName + "|" + score);
+    window.Telegram.WebApp.close(); 
+  } else {
+    alert("Рекорд: " + score + ". Чтобы отправить в бота, открой игру в Telegram!");
+  }
+}
+
+function shareScore(gameName, score) {
+  playClick();
+  if (window.Telegram && window.Telegram.WebApp) {
+    let text = `Я набрал ${score} очков в игре ${gameName} в Игровом Центре! А ты сможешь лучше? 🎮`;
+    let url = "https://t.me/share/url?url=" + encodeURIComponent("https://kingi5.github.io/shop/") + "&text=" + encodeURIComponent(text);
+    window.Telegram.WebApp.openTelegramLink(url);
+  } else {
+    alert("Поделиться можно только из Telegram!");
+  }
+}
 
 // ==========================================
 // УПРАВЛЕНИЕ
@@ -244,24 +307,22 @@ const MELODY_WALK = ["C4", "D4", "E4", "G4", "C5", "G4", "E4", "D4"]; // Вес�
 function openGame(game) {
   document.getElementById('menu').style.display = 'none';
   document.getElementById('screen-' + game).style.display = 'flex';
-  
-  initAudio(); // Включаем аудио при первом клике
-  
+  initAudio(); 
   if (game === 'cat') { startCat(); startMusic(MELODY_CAT, 200); }
   if (game === 'runner') { showLevels(); startMusic(MELODY_RUNNER, 220); }
   if (game === 'sapper') { startSapper(); startMusic(MELODY_SAPPER, 100); }
   if (game === 'snake') { startSnake(); startMusic(MELODY_SNAKE, 180); }
   if (game === 'walk') { startWalk(); startMusic(MELODY_WALK, 160); }
+  if (game === 'minecraft') { startMinecraft(); startMusic(MELODY_MC, 150); }
 }
 
 let activeTimers = [];
 function closeGame() {
+  playClick();
   document.querySelectorAll('.game-screen').forEach(el => el.style.display = 'none');
   document.getElementById('menu').style.display = 'block';
-  stopMusic();
-  activeTimers.forEach(t => clearInterval(t));
-  activeTimers = [];
-  walkGameOver = true; snakeGameOver = true; runnerGameOver = true;
+  stopMusic(); activeTimers.forEach(t => clearInterval(t)); activeTimers = [];
+  walkGameOver = true; snakeGameOver = true; runnerGameOver = true; mcGameOver = true;
 }
 
 // ==========================================
@@ -269,6 +330,7 @@ function closeGame() {
 // ==========================================
 let catScore = 0, catTime = 30, catT, catS;
 function startCat() {
+  playClick();
   catScore = 0; catTime = 30;
   document.getElementById('catOver').style.display = 'none';
   const area = document.getElementById('catGameArea'); area.innerHTML = "";
@@ -278,7 +340,13 @@ function startCat() {
 
   catT = setInterval(() => {
     catTime--; scoreEl.textContent = `Очки: ${catScore} | Время: ${catTime}`;
-    if (catTime <= 0) { clearInterval(catT); clearInterval(catS); area.innerHTML=""; document.getElementById('catOver').style.display = 'flex'; }
+    if (catTime <= 0) { 
+        playDeath();
+        clearInterval(catT); clearInterval(catS); area.innerHTML=""; 
+        document.getElementById('catFinalScore').textContent = "Твой рекорд: " + catScore;
+        document.getElementById('catOver').style.display = 'flex'; 
+        addCoins(catScore); // Даем монеты за игру
+    }
   }, 1000);
   
   catS = setInterval(() => {
@@ -286,34 +354,96 @@ function startCat() {
     const c = document.createElement("div"); c.className = "cat"; c.textContent = "🐈";
     c.style.left = Math.random() * (area.clientWidth - 60) + "px";
     c.style.top = Math.random() * (area.clientHeight - 60) + "px";
-    c.onmousedown = c.ontouchstart = (e) => { e.preventDefault(); catScore++; scoreEl.textContent = `Очки: ${catScore} | Время: ${catTime}`; c.remove(); };
+    c.onmousedown = c.ontouchstart = (e) => { 
+        e.preventDefault(); playMeow(); catScore++; 
+        scoreEl.textContent = `Очки: ${catScore} | Время: ${catTime}`; 
+        c.remove(); 
+    };
     area.appendChild(c);
   }, 800);
   activeTimers.push(catT, catS);
 }
 
 // ==========================================
-// 2. ГЕОМЕТРИ ДАШ (РАННЕР)
+// 2. РАННЕР (GD)
 // ==========================================
 let runnerGameOver = true, runnerWin = false, runnerCanvas, runnerCtx, runnerAnim;
 let player, mapObjects, progress, currentLevel = 1, gameSpeed, jumpForce, gravity;
 let unlockedLevels = parseInt(localStorage.getItem('gd_unlocked')) || 1;
 
 function showLevels() {
+  playClick();
   runnerGameOver = true;
   document.getElementById('runnerOver').style.display = 'none';
   document.getElementById('runnerWin').style.display = 'none';
+  document.getElementById('skinsMenu').style.display = 'none';
   document.getElementById('levelsMenu').style.display = 'flex';
   
   if (unlockedLevels >= 2) { document.getElementById('lvl2Btn').classList.remove('locked'); document.getElementById('lock2').textContent = "▶️"; }
   if (unlockedLevels >= 3) { document.getElementById('lvl3Btn').classList.remove('locked'); document.getElementById('lock3').textContent = "▶️"; }
 }
 
+function openSkins() {
+  playClick();
+  document.getElementById('levelsMenu').style.display = 'none';
+  document.getElementById('skinsMenu').style.display = 'flex';
+  updateSkinsUI();
+}
+
+function closeSkins() {
+  playClick();
+  document.getElementById('skinsMenu').style.display = 'none';
+  document.getElementById('levelsMenu').style.display = 'flex';
+}
+
+function buySkin(skinId, price) {
+  playClick();
+  if (ownedSkins.includes(skinId)) {
+    currentSkin = skinId;
+    localStorage.setItem('gd_skin', skinId);
+    updateSkinsUI();
+  } else {
+    if (coins >= price) {
+      coins -= price;
+      ownedSkins.push(skinId);
+      localStorage.setItem('gd_owned_skins', JSON.stringify(ownedSkins));
+      localStorage.setItem('global_coins', coins);
+      currentSkin = skinId;
+      localStorage.setItem('gd_skin', skinId);
+      updateCoinsUI();
+      updateSkinsUI();
+    } else {
+      alert("Недостаточно монет! Играй больше, чтобы заработать 🪙");
+    }
+  }
+}
+
+function updateSkinsUI() {
+  for(let i=0; i<3; i++) {
+    let btn = document.getElementById('skin'+i+'Btn') || document.getElementById('item-dirt'); // fallback
+    if (i===0) btn = document.querySelectorAll('.skin-btn')[0];
+    else btn = document.getElementById('skin'+i+'Btn');
+    
+    if (!btn) continue;
+    
+    if (ownedSkins.includes(i)) {
+      btn.classList.add('owned');
+      btn.querySelector('span:last-child').textContent = i === currentSkin ? "Активен ✅" : "Выбрать";
+      if (i === currentSkin) btn.classList.add('active-skin');
+      else btn.classList.remove('active-skin');
+    } else {
+      btn.classList.remove('owned', 'active-skin');
+    }
+  }
+}
+
 function startRunner(level) {
   if (level > unlockedLevels) return;
+  playClick();
 
   currentLevel = level;
   document.getElementById('levelsMenu').style.display = 'none';
+  document.getElementById('skinsMenu').style.display = 'none';
   document.getElementById('runnerOver').style.display = 'none';
   document.getElementById('runnerWin').style.display = 'none';
   
@@ -324,35 +454,38 @@ function startRunner(level) {
   
   runnerGameOver = false; runnerWin = false; progress = 0; mapObjects = [];
   
-  gameSpeed = level === 1 ? 5 : (level === 2 ? 6 : 7.5);
+  gameSpeed = level === 1 ? 5 : (level === 2 ? 6.5 : 8);
   jumpForce = -11.5;
   gravity = 0.65;
 
-  player = { x: 80, y: runnerCanvas.height - 100, w: 30, h: 30, vy: 0, jump: false, rot: 0, canOrbJump: false };
+  player = { x: 80, y: runnerCanvas.height - 100, w: 30, h: 30, vy: 0, jump: false, rot: 0, canOrbJump: false, color: SKIN_COLORS[currentSkin] };
 
   let startX = 400;
   let totalDist = runnerCanvas.width * 3;
   
-  for (let i = startX; i < totalDist; i += 400) {
+  for (let i = startX; i < totalDist; i += 350) {
     let rand = Math.random();
-    if (rand < 0.4) {
+    if (rand < 0.3) {
       mapObjects.push({ type: 'spike', x: i, y: runnerCanvas.height - 70, w: 30, h: 30 });
-    } else if (rand < 0.6) {
+    } else if (rand < 0.5) {
       mapObjects.push({ type: 'spike', x: i, y: runnerCanvas.height - 70, w: 30, h: 30 });
       mapObjects.push({ type: 'spike', x: i + 30, y: runnerCanvas.height - 70, w: 30, h: 30 });
-    } else if (rand < 0.8) {
+    } else if (rand < 0.7) {
       mapObjects.push({ type: 'block', x: i, y: runnerCanvas.height - 150, w: 100, h: 20 });
       mapObjects.push({ type: 'spike', x: i + 30, y: runnerCanvas.height - 70, w: 30, h: 30 });
-    } else {
+    } else if (rand < 0.9) {
       mapObjects.push({ type: 'orb', x: i, y: runnerCanvas.height - 130, w: 25, h: 25 });
       mapObjects.push({ type: 'spike', x: i + 100, y: runnerCanvas.height - 70, w: 30, h: 30 });
+    } else {
+      // Монетка
+      mapObjects.push({ type: 'coin', x: i, y: runnerCanvas.height - 100, w: 20, h: 20 });
     }
   }
 
   const doJump = () => { 
     if (runnerGameOver || runnerWin) return;
-    if (!player.jump) { player.vy = jumpForce; player.jump = true; } 
-    else if (player.canOrbJump) { player.vy = jumpForce - 1.5; player.canOrbJump = false; }
+    if (!player.jump) { player.vy = jumpForce; player.jump = true; playClick(); } 
+    else if (player.canOrbJump) { player.vy = jumpForce - 1.5; player.canOrbJump = false; playClick(); }
   };
   
   document.getElementById('runnerContainer').onmousedown = doJump;
@@ -393,7 +526,11 @@ function startRunner(level) {
       if (o.type === 'spike') {
         let hitX = player.x + 5; let hitW = player.w - 10;
         if (hitX < o.x + o.w - 5 && hitX + hitW > o.x + 5 && player.y + player.h > o.y + 10) {
-          runnerGameOver = true; document.getElementById('runnerOver').style.display = 'flex';
+          playDeath();
+          runnerGameOver = true; 
+          addCoins(10);
+          document.getElementById('runnerFinalScore').textContent = "Ты дошел до " + Math.floor(progress) + "% (+10 🪙)";
+          document.getElementById('runnerOver').style.display = 'flex';
         }
       } else if (o.type === 'block') {
         if (player.vy > 0 && player.y + player.h > o.y && player.y + player.h < o.y + o.h + 15 && player.x + player.w > o.x && player.x < o.x + o.w) {
@@ -403,6 +540,12 @@ function startRunner(level) {
       } else if (o.type === 'orb') {
         if (player.x < o.x + o.w && player.x + player.w > o.x && player.y < o.y + o.h && player.y + player.h > o.y) {
           player.canOrbJump = true;
+        }
+      } else if (o.type === 'coin') {
+        if (player.x < o.x + o.w && player.x + player.w > o.x && player.y < o.y + o.h && player.y + player.h > o.y) {
+          addCoins(5);
+          playTone(1200, 'sine', 0.1, 0.1); // Звук монетки
+          mapObjects.splice(i, 1);
         }
       }
     }
@@ -423,15 +566,17 @@ function startRunner(level) {
         runnerCtx.beginPath(); runnerCtx.arc(o.x + o.w/2, o.y + o.h/2, o.w/2, 0, Math.PI * 2);
         runnerCtx.fillStyle = player.canOrbJump ? "#ffff00" : "#f1c40f"; runnerCtx.fill();
         runnerCtx.strokeStyle = "#fff"; runnerCtx.lineWidth = 2; runnerCtx.stroke();
-        runnerCtx.beginPath(); runnerCtx.arc(o.x + o.w/2, o.y + o.h/2, o.w/4, 0, Math.PI * 2);
-        runnerCtx.fillStyle = "#fff"; runnerCtx.fill();
+      } else if (o.type === 'coin') {
+        runnerCtx.beginPath(); runnerCtx.arc(o.x + o.w/2, o.y + o.h/2, o.w/2, 0, Math.PI * 2);
+        runnerCtx.fillStyle = "#FFD700"; runnerCtx.fill();
+        runnerCtx.strokeStyle = "#DAA520"; runnerCtx.lineWidth = 2; runnerCtx.stroke();
       }
     }
 
     runnerCtx.save();
     runnerCtx.translate(player.x + player.w/2, player.y + player.h/2);
     runnerCtx.rotate(player.rot);
-    runnerCtx.fillStyle = "#FFD700"; runnerCtx.fillRect(-player.w/2, -player.h/2, player.w, player.h);
+    runnerCtx.fillStyle = player.color; runnerCtx.fillRect(-player.w/2, -player.h/2, player.w, player.h);
     runnerCtx.strokeStyle = "#000"; runnerCtx.lineWidth = 2; runnerCtx.strokeRect(-player.w/2, -player.h/2, player.w, player.h);
     runnerCtx.rotate(-player.rot); 
     runnerCtx.fillStyle = "#000"; runnerCtx.fillRect(-5, -8, 4, 6); runnerCtx.fillRect(5, -8, 4, 6); 
@@ -454,6 +599,7 @@ function nextLevel() {
 // ==========================================
 let sapperGrid = [], sapperRevealed = 0, sapperFlags = 10, sapperGameOver = false;
 function startSapper() {
+  playClick();
   document.getElementById('sapperOver').style.display = 'none';
   const board = document.getElementById('sapperBoard');
   board.innerHTML = "";
@@ -478,8 +624,8 @@ function startSapper() {
     let div = document.createElement('div'); div.className = "cell"; div.id = "cell-"+i;
     div.oncontextmenu = (e) => { e.preventDefault(); toggleFlag(i); };
     let timer;
-    div.ontouchstart = () => { timer = setTimeout(() => toggleFlag(i), 400); };
-    div.ontouchend = () => clearTimeout(timer);
+    div.ontouchstart = () => { timer = setTimeout(() => { toggleFlag(i); div.longPress = true; }, 400); };
+    div.ontouchend = () => { clearTimeout(timer); setTimeout(()=>{div.longPress = false;}, 100); };
     div.onclick = () => { if(!div.longPress) reveal(i); };
     board.appendChild(div);
   });
@@ -487,7 +633,11 @@ function startSapper() {
 
 function toggleFlag(i) {
   if (sapperGameOver || sapperGrid[i].rev) return;
-  let cell = sapperGrid[i]; cell.flag = !cell.flag;
+  playClick();
+  let cell = sapperGrid[i]; 
+  if (!cell.flag && sapperFlags <= 0) return; // Нельзя ставить больше флажков
+  
+  cell.flag = !cell.flag;
   sapperFlags += cell.flag ? -1 : 1;
   document.getElementById('flagsLeft').textContent = sapperFlags;
   let div = document.getElementById("cell-"+i);
@@ -502,8 +652,12 @@ function reveal(i) {
   div.classList.add("revealed");
   
   if (cell.mine) {
+    playDeath();
     div.classList.add("mine"); div.textContent = "💣";
-    sapperGameOver = true; document.getElementById('sapperMsg').textContent = "Бум! Ты проиграл."; document.getElementById('sapperOver').style.display = 'flex';
+    sapperGameOver = true; 
+    document.getElementById('sapperMsg').textContent = "Бум! Ты проиграл."; 
+    document.getElementById('sapperOver').style.display = 'flex';
+    addCoins(sapperRevealed);
     return;
   }
   
@@ -519,7 +673,9 @@ function reveal(i) {
   }
   
   if (sapperRevealed === 54) {
+    playTone(1000, 'sine', 0.5, 0.1);
     sapperGameOver = true; document.getElementById('sapperMsg').textContent = "Победа!"; document.getElementById('sapperOver').style.display = 'flex';
+    addCoins(50);
   }
 }
 
@@ -528,6 +684,7 @@ function reveal(i) {
 // ==========================================
 let snakeGameOver = true, snake, snakeDir, snakeFood, snakeScore, snakeCanvas, snakeCtx, snakeLoop;
 function startSnake() {
+  playClick();
   document.getElementById('snakeOver').style.display = 'none';
   snakeCanvas = document.getElementById('snakeCanvas');
   snakeCtx = snakeCanvas.getContext('2d');
@@ -562,6 +719,7 @@ function startSnake() {
     
     snake.unshift(head);
     if (head.x === snakeFood.x && head.y === snakeFood.y) {
+      playTone(800, 'sine', 0.1);
       snakeScore += 10; document.getElementById('snakeScore').textContent = snakeScore;
       snakeFood = {x: Math.floor(Math.random()*(snakeCanvas.width/size)), y: Math.floor(Math.random()*(snakeCanvas.height/size))};
     } else { snake.pop(); }
@@ -573,13 +731,19 @@ function startSnake() {
   }, 100);
   activeTimers.push(snakeLoop);
 }
-function endSnake() { snakeGameOver = true; document.getElementById('snakeOver').style.display = 'flex'; }
+function endSnake() { 
+  playDeath();
+  snakeGameOver = true; 
+  document.getElementById('snakeOver').style.display = 'flex'; 
+  addCoins(snakeScore);
+}
 
 // ==========================================
-// 5. WALKICKERS (ПРЫГУНЫ)
+// 5. WALKICKERS
 // ==========================================
 let walkGameOver = true, walkCanvas, walkCtx, walkPlayer, walkPlats, walkEnemies, walkScore, walkCameraX, walkAnim;
 function startWalk() {
+  playClick();
   document.getElementById('walkOver').style.display = 'none';
   walkCanvas = document.getElementById('walkCanvas');
   walkCtx = walkCanvas.getContext('2d');
@@ -663,8 +827,142 @@ function startWalk() {
   }
   loop();
 }
-function endWalk() { walkGameOver = true; document.getElementById('walkOver').style.display = 'flex'; }
+function endWalk() { 
+  playDeath();
+  walkGameOver = true; 
+  document.getElementById('walkOver').style.display = 'flex'; 
+  addCoins(walkScore);
+}
 
+// ==========================================
+// 6. 2D МАЙНКРАФТ
+// ==========================================
+let mcGameOver = true, mcCanvas, mcCtx, mcAnim;
+let mcPlayer, mcBlocks, mcCameraX;
+let mcLeft = false, mcRight = false;
+let selectedBlockColor = '#8B4513';
+
+const TILE_SIZE = 40;
+
+function selectBlock(type, color) {
+  playClick();
+  selectedBlockColor = color;
+  document.querySelectorAll('.mc-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('item-' + type).classList.add('active');
+}
+
+function startMinecraft() {
+  playClick();
+  mcCanvas = document.getElementById('minecraftCanvas');
+  mcCtx = mcCanvas.getContext('2d');
+  mcCanvas.width = mcCanvas.parentElement.clientWidth;
+  mcCanvas.height = mcCanvas.parentElement.clientHeight;
+  
+  mcGameOver = false; mcCameraX = 0;
+  mcPlayer = { x: 100, y: 100, w: 30, h: 40, vy: 0, grounded: false };
+  
+  mcBlocks = [];
+  for(let x = 0; x < 50; x++) {
+    for(let y = 0; y < 12; y++) {
+      if (y >= 6) {
+        // Земля и камни
+        mcBlocks.push({ x: x * TILE_SIZE, y: y * TILE_SIZE, color: y === 6 ? '#228B22' : (y > 8 ? '#808080' : '#8B4513') });
+      }
+    }
+  }
+
+  // Кнопки управления
+  document.getElementById('btn-left').ontouchstart = () => mcLeft = true;
+  document.getElementById('btn-left').ontouchend = () => mcLeft = false;
+  document.getElementById('btn-left').onmousedown = () => mcLeft = true;
+  document.getElementById('btn-left').onmouseup = () => mcLeft = false;
+  
+  document.getElementById('btn-right').ontouchstart = () => mcRight = true;
+  document.getElementById('btn-right').ontouchend = () => mcRight = false;
+  document.getElementById('btn-right').onmousedown = () => mcRight = true;
+  document.getElementById('btn-right').onmouseup = () => mcRight = false;
+  
+  document.getElementById('btn-jump').ontouchstart = (e) => { e.preventDefault(); jumpMinecraft(); };
+  document.getElementById('btn-jump').onmousedown = () => jumpMinecraft();
+
+  // Ставим/ломаем блоки
+  mcCanvas.onmousedown = mcCanvas.ontouchstart = (e) => {
+    e.preventDefault();
+    let rect = mcCanvas.getBoundingClientRect();
+    let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    let clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    
+    let clickX = clientX - rect.left + mcCameraX;
+    let clickY = clientY - rect.top;
+    
+    let hitIndex = mcBlocks.findIndex(b => 
+      clickX > b.x && clickX < b.x + TILE_SIZE && 
+      clickY > b.y && clickY < b.y + TILE_SIZE
+    );
+
+    if (hitIndex !== -1) {
+      let b = mcBlocks[hitIndex];
+      let dist = Math.abs(mcPlayer.x - b.x);
+      
+      if (dist < 120) {
+        if (b.color === selectedBlockColor) {
+          playTone(300, 'square', 0.1);
+          mcBlocks.splice(hitIndex, 1);
+        } else {
+          playTone(500, 'square', 0.1);
+          b.color = selectedBlockColor;
+        }
+      }
+    }
+  };
+
+  function jumpMinecraft() {
+    if (mcPlayer.grounded) { mcPlayer.vy = -12; mcPlayer.grounded = false; playTone(400, 'sine', 0.1); }
+  }
+
+  cancelAnimationFrame(mcAnim);
+  function loop() {
+    if (mcGameOver) return;
+
+    if (mcLeft) mcPlayer.x -= 5;
+    if (mcRight) mcPlayer.x += 5;
+    
+    mcPlayer.vy += 0.5; mcPlayer.y += mcPlayer.vy;
+    mcPlayer.grounded = false;
+
+    mcBlocks.forEach(b => {
+      if (mcPlayer.x < b.x + TILE_SIZE && mcPlayer.x + mcPlayer.w > b.x &&
+          mcPlayer.y + mcPlayer.h > b.y && mcPlayer.y + mcPlayer.h < b.y + TILE_SIZE + 10 && mcPlayer.vy > 0) {
+        mcPlayer.y = b.y - mcPlayer.h;
+        mcPlayer.vy = 0;
+        mcPlayer.grounded = true;
+      }
+    });
+
+    mcCameraX = mcPlayer.x - mcCanvas.width / 2;
+    
+    mcCtx.clearRect(0, 0, mcCanvas.width, mcCanvas.height);
+    mcCtx.fillStyle = "#87CEEB"; mcCtx.fillRect(0,0,mcCanvas.width, mcCanvas.height);
+    
+    mcBlocks.forEach(b => {
+      let screenX = b.x - mcCameraX;
+      if (screenX > -TILE_SIZE && screenX < mcCanvas.width) {
+        mcCtx.fillStyle = b.color;
+        mcCtx.fillRect(screenX, b.y, TILE_SIZE, TILE_SIZE);
+        mcCtx.strokeStyle = "rgba(0,0,0,0.2)";
+        mcCtx.strokeRect(screenX, b.y, TILE_SIZE, TILE_SIZE);
+      }
+    });
+
+    mcCtx.fillStyle = "#000"; 
+    mcCtx.fillRect(mcPlayer.x - mcCameraX, mcPlayer.y, mcPlayer.w, mcPlayer.h);
+    mcCtx.fillStyle = "#fff"; 
+    mcCtx.fillRect(mcPlayer.x - mcCameraX + 5, mcPlayer.y + 10, 6, 6);
+
+    mcAnim = requestAnimationFrame(loop);
+  }
+  loop();
+}
 </script>
 </body>
 </html>
