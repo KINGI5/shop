@@ -2,140 +2,461 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Мой магазин</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Игровой Центр</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    background: #f0f2f5;
-    color: #1a1a1a;
-    padding: 16px;
-    padding-bottom: 40px;
-  }
-  header {
-    text-align: center;
-    padding: 20px 0;
-  }
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; user-select: none; }
+  body { background: #f0f2f5; color: #1a1a1a; overflow: hidden; }
+
+  /* --- ГЛАВНОЕ МЕНЮ --- */
+  #menu { padding: 16px; height: 100vh; overflow-y: auto; }
+  header { text-align: center; padding: 20px 0; }
   header h1 { font-size: 26px; margin-bottom: 6px; }
-  header p { color: #666; font-size: 14px; }
+  
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; max-width: 600px; margin: 0 auto; padding-bottom: 20px; }
+  .card { background: #fff; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); cursor: pointer; transition: transform 0.15s; text-align: center; padding-bottom: 12px;}
+  .card:active { transform: scale(0.95); }
+  .card .emoji { font-size: 50px; padding: 20px 0; background: #e8f0ff; }
+  .card .name { font-weight: 600; font-size: 14px; margin-top: 10px; }
 
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-    max-width: 600px;
-    margin: 0 auto;
-  }
-  .card {
-    background: #fff;
-    border-radius: 16px;
-    overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    display: flex;
-    flex-direction: column;
-    transition: transform 0.15s;
-  }
-  .card:active { transform: scale(0.97); }
-  .card .emoji {
-    font-size: 56px;
-    text-align: center;
-    padding: 24px 0;
-    background: linear-gradient(135deg, #e8f0ff, #f5e8ff);
-  }
-  .card .body { padding: 12px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
-  .card .name { font-weight: 600; font-size: 15px; }
-  .card .desc { font-size: 12px; color: #777; flex: 1; }
-  .card .price {
-    font-weight: 700;
-    font-size: 16px;
-    color: #229ED9;
-  }
-  .card button {
-    margin-top: 6px;
-    padding: 8px;
-    border: none;
-    border-radius: 10px;
-    background: #229ED9;
-    color: #fff;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-  }
-  .card button:active { background: #1a7fb0; }
+  /* --- ЭКРАНЫ ИГР --- */
+  .game-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #fff; z-index: 100; display: none; flex-direction: column; }
+  .game-header { height: 50px; background: #229ED9; color: white; display: flex; align-items: center; padding: 0 16px; font-size: 16px; font-weight: bold; flex-shrink: 0; }
+  .back-btn { background: none; border: none; color: white; font-size: 24px; margin-right: 16px; cursor: pointer; }
+  .game-content { flex: 1; position: relative; overflow: hidden; background: #e0f6ff; }
+  .score-text { position: absolute; top: 10px; left: 10px; font-size: 20px; font-weight: bold; color: #333; z-index: 10; text-shadow: 1px 1px 0 #fff;}
+  
+  .btn-reset { position: absolute; top: 10px; right: 10px; background: #ff4757; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; z-index: 10; cursor: pointer;}
+  .btn-reset:active { background: #ff6b81; }
 
-  .toast {
-    position: fixed;
-    bottom: 24px;
-    left: 50%;
-    transform: translateX(-50%) translateY(100px);
-    background: #1a1a1a;
-    color: #fff;
-    padding: 12px 20px;
-    border-radius: 12px;
-    font-size: 14px;
-    opacity: 0;
-    transition: all 0.3s;
-    pointer-events: none;
-  }
-  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  /* --- ИГРА 1: КОТ --- */
+  .cat { position: absolute; font-size: 50px; cursor: crosshair; }
+
+  /* --- ИГРА 2: РАННЕР --- */
+  #runnerCanvas { display: block; width: 100%; height: 100%; background: linear-gradient(to bottom, #87CEEB 0%, #E0F6FF 100%); }
+
+  /* --- ИГРА 3: САПЁР --- */
+  #sapperBoard { display: grid; gap: 2px; background: #999; padding: 4px; margin: 20px auto; width: fit-content; border-radius: 8px;}
+  .cell { width: 35px; height: 35px; background: #ddd; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 18px; cursor: pointer; border-radius: 4px; }
+  .cell.revealed { background: #eee; cursor: default; }
+  .cell.flag { color: red; }
+  .cell.mine { background: red; color: white; }
+
+  /* --- ИГРА 4: ЗМЕЙКА --- */
+  #snakeCanvas { display: block; width: 100%; height: 100%; background: #111; }
+  
+  /* --- ИГРА 5: WALKICKERS --- */
+  #walkCanvas { display: block; width: 100%; height: 100%; background: #87CEEB; }
+
+  /* Оверлей Game Over */
+  .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 50; text-align: center; }
+  .overlay h2 { font-size: 30px; margin-bottom: 15px; }
+  .overlay button { padding: 12px 24px; font-size: 18px; border-radius: 10px; border: none; background: #229ED9; color: white; font-weight: bold; }
+
 </style>
 </head>
 <body>
 
-<header>
-  <h1>🛍️ Мой магазин</h1>
-  <p>Выбери, что тебе нравится</p>
-</header>
+<!-- ГЛАВНОЕ МЕНЮ -->
+<div id="menu">
+  <header><h1>🕹️ Игровой Центр</h1></header>
+  <div class="grid">
+    <div class="card" onclick="openGame('cat')"><div class="emoji">🐈</div><div class="name">Поймай Кота</div></div>
+    <div class="card" onclick="openGame('runner')"><div class="emoji">🟨</div><div class="name">Кубик-Раннер</div></div>
+    <div class="card" onclick="openGame('sapper')"><div class="emoji">💣</div><div class="name">Сапёр</div></div>
+    <div class="card" onclick="openGame('snake')"><div class="emoji">🐍</div><div class="name">Змейка</div></div>
+    <div class="card" onclick="openGame('walk')"><div class="emoji">🏃</div><div class="name">Прыгуны</div></div>
+  </div>
+</div>
 
-<div class="grid" id="grid"></div>
-<div class="toast" id="toast"></div>
+<!-- ЭКРАН: КОТ -->
+<div id="screen-cat" class="game-screen">
+  <div class="game-header"><button class="back-btn" onclick="closeGame()">←</button> Поймай Кота</div>
+  <div class="game-content" id="catContainer">
+    <div class="score-text" id="catScore">Очки: 0 | Время: 30</div>
+    <div id="catGameArea" style="width:100%; height:100%; position:relative;"></div>
+    <div class="overlay" id="catOver"><h2>Игра окончена!</h2><button onclick="startCat()">Ещё раз</button></div>
+  </div>
+</div>
+
+<!-- ЭКРАН: РАННЕР -->
+<div id="screen-runner" class="game-screen">
+  <div class="game-header"><button class="back-btn" onclick="closeGame()">←</button> Кубик-Раннер</div>
+  <div class="game-content" id="runnerContainer">
+    <div class="score-text" id="runnerScore">Счёт: 0</div>
+    <canvas id="runnerCanvas"></canvas>
+    <div class="overlay" id="runnerOver"><h2>Ты врезался!</h2><button onclick="startRunner()">Ещё раз</button></div>
+  </div>
+</div>
+
+<!-- ЭКРАН: САПЁР -->
+<div id="screen-sapper" class="game-screen">
+  <div class="game-header"><button class="back-btn" onclick="closeGame()">←</button> Сапёр</div>
+  <div class="game-content" style="background: #fff; overflow-y: auto;">
+    <div class="score-text" style="color:black">Осталось флажков: <span id="flagsLeft">10</span></div>
+    <div id="sapperBoard"></div>
+    <div class="overlay" id="sapperOver"><h2 id="sapperMsg">Бум!</h2><button onclick="startSapper()">Заново</button></div>
+  </div>
+</div>
+
+<!-- ЭКРАН: ЗМЕЙКА -->
+<div id="screen-snake" class="game-screen">
+  <div class="game-header"><button class="back-btn" onclick="closeGame()">←</button> Змейка</div>
+  <div class="game-content">
+    <div class="score-text" style="color:white">Счёт: <span id="snakeScore">0</span></div>
+    <canvas id="snakeCanvas"></canvas>
+    <div class="overlay" id="snakeOver"><h2>Ты проиграл!</h2><button onclick="startSnake()">Заново</button></div>
+  </div>
+</div>
+
+<!-- ЭКРАН: WALKICKERS -->
+<div id="screen-walk" class="game-screen">
+  <div class="game-header"><button class="back-btn" onclick="closeGame()">←</button> Прыгуны</div>
+  <div class="game-content" id="walkContainer">
+    <div class="score-text">Дистанция: <span id="walkScore">0</span></div>
+    <canvas id="walkCanvas"></canvas>
+    <div class="overlay" id="walkOver"><h2>Ты упал!</h2><button onclick="startWalk()">Заново</button></div>
+  </div>
+</div>
+
 
 <script>
-  // 👇 ТУТ МЕНЯЙ ТОВАРЫ
-  const products = [
-    { emoji: "🎨", name: "Стикерпак", desc: "Крутые стикеры для чата", price: 50 },
-    { emoji: "🕹️", name: "Скин для игры", desc: "Редкий скин персонажа", price: 150 },
-    { emoji: "📚", name: "Гайд по Python", desc: "Учимся кодить с нуля", price: 100 },
-    { emoji: "🎁", name: "Набор аватарок", desc: "10 красивых аватарок", price: 80 },
-  ];
+// ==========================================
+// УПРАВЛЕНИЕ
+// ==========================================
+function openGame(game) {
+  document.getElementById('menu').style.display = 'none';
+  document.getElementById('screen-' + game).style.display = 'flex';
+  if (game === 'cat') startCat();
+  if (game === 'runner') startRunner();
+  if (game === 'sapper') startSapper();
+  if (game === 'snake') startSnake();
+  if (game === 'walk') startWalk();
+}
 
-  const grid = document.getElementById("grid");
-  const toast = document.getElementById("toast");
+let activeTimers = [];
+function closeGame() {
+  document.querySelectorAll('.game-screen').forEach(el => el.style.display = 'none');
+  document.getElementById('menu').style.display = 'block';
+  // Очистка таймеров
+  activeTimers.forEach(t => clearInterval(t));
+  activeTimers = [];
+  walkGameOver = true; snakeGameOver = true; runnerGameOver = true;
+}
 
-  function showToast(text) {
-    toast.textContent = text;
-    toast.classList.add("show");
-    setTimeout(() => toast.classList.remove("show"), 2000);
+// ==========================================
+// 1. КОТ
+// ==========================================
+let catScore = 0, catTime = 30, catT, catS;
+function startCat() {
+  catScore = 0; catTime = 30;
+  document.getElementById('catOver').style.display = 'none';
+  const area = document.getElementById('catGameArea'); area.innerHTML = "";
+  const scoreEl = document.getElementById('catScore');
+  
+  catT = setInterval(() => {
+    catTime--; scoreEl.textContent = `Очки: ${catScore} | Время: ${catTime}`;
+    if (catTime <= 0) { clearInterval(catT); clearInterval(catS); area.innerHTML=""; document.getElementById('catOver').style.display = 'flex'; }
+  }, 1000);
+  
+  catS = setInterval(() => {
+    area.innerHTML = "";
+    const c = document.createElement("div"); c.className = "cat"; c.textContent = "🐈";
+    c.style.left = Math.random() * (area.clientWidth - 60) + "px";
+    c.style.top = Math.random() * (area.clientHeight - 60) + "px";
+    c.onmousedown = c.ontouchstart = (e) => { e.preventDefault(); catScore++; scoreEl.textContent = `Очки: ${catScore} | Время: ${catTime}`; c.remove(); };
+    area.appendChild(c);
+  }, 800);
+  activeTimers.push(catT, catS);
+}
+
+// ==========================================
+// 2. РАННЕР
+// ==========================================
+let runnerGameOver = true, runnerScore = 0, runnerSpeed = 5, runnerObstacles = [], runnerPlayer, runnerCanvas, runnerCtx, runnerSpawn, runnerAnim;
+function startRunner() {
+  document.getElementById('runnerOver').style.display = 'none';
+  runnerCanvas = document.getElementById('runnerCanvas');
+  runnerCtx = runnerCanvas.getContext('2d');
+  runnerCanvas.width = runnerCanvas.parentElement.clientWidth;
+  runnerCanvas.height = runnerCanvas.parentElement.clientHeight;
+  
+  runnerGameOver = false; runnerScore = 0; runnerSpeed = 5; runnerObstacles = []; runnerSpawn = 0;
+  runnerPlayer = { x: 50, y: runnerCanvas.height - 120, w: 30, h: 30, vy: 0, jump: false };
+  document.getElementById('runnerScore').textContent = "Счёт: 0";
+
+  const jump = () => { if (!runnerPlayer.jump && !runnerGameOver) { runnerPlayer.vy = -12; runnerPlayer.jump = true; } };
+  document.getElementById('runnerContainer').onmousedown = jump;
+  document.getElementById('runnerContainer').ontouchstart = (e) => { e.preventDefault(); jump(); };
+
+  function loop() {
+    if (runnerGameOver) return;
+    runnerPlayer.vy += 0.5; runnerPlayer.y += runnerPlayer.vy;
+    if (runnerPlayer.y > runnerCanvas.height - 80) { runnerPlayer.y = runnerCanvas.height - 80; runnerPlayer.vy = 0; runnerPlayer.jump = false; }
+    
+    runnerSpawn++;
+    if (runnerSpawn > 100) { runnerObstacles.push({ x: runnerCanvas.width, y: runnerCanvas.height - 80, w: 30, h: 40 }); runnerSpawn = 0; runnerScore += 10; document.getElementById('runnerScore').textContent = "Счёт: " + runnerScore; }
+    
+    runnerCtx.clearRect(0, 0, runnerCanvas.width, runnerCanvas.height);
+    runnerCtx.fillStyle = "#8B4513"; runnerCtx.fillRect(0, runnerCanvas.height - 50, runnerCanvas.width, 50);
+    
+    runnerCtx.fillStyle = "#FFD700"; runnerCtx.fillRect(runnerPlayer.x, runnerPlayer.y, runnerPlayer.w, runnerPlayer.h);
+    
+    runnerCtx.fillStyle = "#FF4500";
+    for (let i = runnerObstacles.length - 1; i >= 0; i--) {
+      let o = runnerObstacles[i]; o.x -= runnerSpeed;
+      runnerCtx.fillRect(o.x, o.y, o.w, o.h);
+      if (runnerPlayer.x < o.x + o.w && runnerPlayer.x + runnerPlayer.w > o.x && runnerPlayer.y < o.y + o.h && runnerPlayer.y + runnerPlayer.h > o.y) {
+        runnerGameOver = true; document.getElementById('runnerOver').style.display = 'flex';
+      }
+      if (o.x + o.w < 0) runnerObstacles.splice(i, 1);
+    }
+    if (!runnerGameOver) runnerAnim = requestAnimationFrame(loop);
+  }
+  loop();
+}
+
+// ==========================================
+// 3. САПЁР
+// ==========================================
+let sapperGrid = [], sapperRevealed = 0, sapperFlags = 10, sapperGameOver = false;
+function startSapper() {
+  document.getElementById('sapperOver').style.display = 'none';
+  const board = document.getElementById('sapperBoard');
+  board.innerHTML = "";
+  sapperGrid = []; sapperRevealed = 0; sapperFlags = 10; sapperGameOver = false;
+  document.getElementById('flagsLeft').textContent = sapperFlags;
+  
+  // Генерация поля 8x8
+  for(let i=0; i<64; i++) sapperGrid.push({ mine: false, rev: false, flag: false, count: 0 });
+  // 10 мин
+  let mines = 0;
+  while(mines < 10) { let r = Math.floor(Math.random()*64); if(!sapperGrid[r].mine) { sapperGrid[r].mine = true; mines++; } }
+  
+  // Подсчет мин вокруг
+  for(let i=0; i<64; i++) {
+    if(sapperGrid[i].mine) continue;
+    let c = 0; let row = Math.floor(i/8); let col = i%8;
+    for(let r=-1; r<=1; r++) for(let c2=-1; c2<=1; c2++) {
+      let nr = row+r, nc = col+c2;
+      if(nr>=0 && nr<8 && nc>=0 && nc<8 && sapperGrid[nr*8+nc].mine) c++;
+    }
+    sapperGrid[i].count = c;
   }
 
-  products.forEach(p => {
-    const card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = `
-      <div class="emoji">${p.emoji}</div>
-      <div class="body">
-        <div class="name">${p.name}</div>
-        <div class="desc">${p.desc}</div>
-        <div class="price">${p.price} ⭐</div>
-        <button>Купить</button>
-      </div>
-    `;
-    card.querySelector("button").addEventListener("click", () => {
-      if (window.Telegram && window.Telegram.WebApp) {
-        window.Telegram.WebApp.sendData(JSON.stringify({ product: p.name, price: p.price }));
-      } else {
-        showToast(`«${p.name}» добавлен (демо)`);
+  // Рендер
+  sapperGrid.forEach((cell, i) => {
+    let div = document.createElement('div'); div.className = "cell"; div.id = "cell-"+i;
+    div.oncontextmenu = (e) => { e.preventDefault(); toggleFlag(i); };
+    
+    // Для телефона: долгий тап ставит флаг
+    let timer;
+    div.ontouchstart = () => { timer = setTimeout(() => toggleFlag(i), 400); };
+    div.ontouchend = () => clearTimeout(timer);
+    div.onclick = () => { if(!div.longPress) reveal(i); };
+
+    board.appendChild(div);
+  });
+}
+
+function toggleFlag(i) {
+  if (sapperGameOver || sapperGrid[i].rev) return;
+  let cell = sapperGrid[i];
+  cell.flag = !cell.flag;
+  sapperFlags += cell.flag ? -1 : 1;
+  document.getElementById('flagsLeft').textContent = sapperFlags;
+  let div = document.getElementById("cell-"+i);
+  div.textContent = cell.flag ? "🚩" : "";
+  div.classList.toggle("flag", cell.flag);
+}
+
+function reveal(i) {
+  if (sapperGameOver || sapperGrid[i].rev || sapperGrid[i].flag) return;
+  let cell = sapperGrid[i]; cell.rev = true; sapperRevealed++;
+  let div = document.getElementById("cell-"+i);
+  div.classList.add("revealed");
+  
+  if (cell.mine) {
+    div.classList.add("mine"); div.textContent = "💣";
+    sapperGameOver = true; document.getElementById('sapperMsg').textContent = "Бум! Ты проиграл."; document.getElementById('sapperOver').style.display = 'flex';
+    return;
+  }
+  
+  if (cell.count > 0) {
+    div.textContent = cell.count;
+    div.style.color = ["", "blue", "green", "red", "purple", "maroon", "turquoise", "black", "gray"][cell.count];
+  } else {
+    // Открываем пустые соседние
+    let row = Math.floor(i/8); let col = i%8;
+    for(let r=-1; r<=1; r++) for(let c2=-1; c2<=1; c2++) {
+      let nr = row+r, nc = col+c2;
+      if(nr>=0 && nr<8 && nc>=0 && nc<8) reveal(nr*8+nc);
+    }
+  }
+  
+  if (sapperRevealed === 54) {
+    sapperGameOver = true; document.getElementById('sapperMsg').textContent = "Победа!"; document.getElementById('sapperOver').style.display = 'flex';
+  }
+}
+
+// ==========================================
+// 4. ЗМЕЙКА
+// ==========================================
+let snakeGameOver = true, snake, snakeDir, snakeFood, snakeScore, snakeCanvas, snakeCtx, snakeLoop;
+function startSnake() {
+  document.getElementById('snakeOver').style.display = 'none';
+  snakeCanvas = document.getElementById('snakeCanvas');
+  snakeCtx = snakeCanvas.getContext('2d');
+  snakeCanvas.width = snakeCanvas.parentElement.clientWidth;
+  snakeCanvas.height = snakeCanvas.parentElement.clientHeight;
+  
+  snakeGameOver = false; snake = [{x: 5, y: 5}]; snakeDir = {x: 1, y: 0}; snakeFood = {x: 10, y: 10}; snakeScore = 0;
+  document.getElementById('snakeScore').textContent = 0;
+  const size = 20;
+  
+  // Управление свайпами
+  let sx, sy;
+  snakeCanvas.ontouchstart = (e) => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; };
+  snakeCanvas.ontouchend = (e) => {
+    let dx = e.changedTouches[0].clientX - sx; let dy = e.changedTouches[0].clientY - sy;
+    if (Math.abs(dx) > Math.abs(dy)) { if(dx>0 && snakeDir.x===-1) return; if(dx<0 && snakeDir.x===1) return; snakeDir = {x: dx>0?1:-1, y:0}; } 
+    else { if(dy>0 && snakeDir.y===-1) return; if(dy<0 && snakeDir.y===1) return; snakeDir = {x: 0, y: dy>0?1:-1}; }
+  };
+  // Стрелки для ПК
+  window.onkeydown = (e) => {
+    if(e.key==="ArrowUp" && snakeDir.y!==1) snakeDir={x:0,y:-1};
+    if(e.key==="ArrowDown" && snakeDir.y!==-1) snakeDir={x:0,y:1};
+    if(e.key==="ArrowLeft" && snakeDir.x!==1) snakeDir={x:-1,y:0};
+    if(e.key==="ArrowRight" && snakeDir.x!==-1) snakeDir={x:1,y:0};
+  };
+
+  clearInterval(snakeLoop);
+  snakeLoop = setInterval(() => {
+    if (snakeGameOver) return;
+    let head = {x: snake[0].x + snakeDir.x, y: snake[0].y + snakeDir.y};
+    
+    // Стены
+    if (head.x < 0 || head.x >= snakeCanvas.width/size || head.y < 0 || head.y >= snakeCanvas.height/size) return endSnake();
+    // Себя
+    if (snake.some(s => s.x === head.x && s.y === head.y)) return endSnake();
+    
+    snake.unshift(head);
+    if (head.x === snakeFood.x && head.y === snakeFood.y) {
+      snakeScore += 10; document.getElementById('snakeScore').textContent = snakeScore;
+      snakeFood = {x: Math.floor(Math.random()*(snakeCanvas.width/size)), y: Math.floor(Math.random()*(snakeCanvas.height/size))};
+    } else { snake.pop(); }
+    
+    // Рендер
+    snakeCtx.fillStyle = "#111"; snakeCtx.fillRect(0,0,snakeCanvas.width,snakeCanvas.height);
+    snakeCtx.fillStyle = "#ff4757"; snakeCtx.fillRect(snakeFood.x*size, snakeFood.y*size, size-2, size-2);
+    snakeCtx.fillStyle = "#2ed573";
+    snake.forEach(s => snakeCtx.fillRect(s.x*size, s.y*size, size-2, size-2));
+  }, 100);
+  activeTimers.push(snakeLoop);
+}
+function endSnake() { snakeGameOver = true; document.getElementById('snakeOver').style.display = 'flex'; }
+
+// ==========================================
+// 5. WALKICKERS (ПРЫГУНЫ)
+// ==========================================
+let walkGameOver = true, walkCanvas, walkCtx, walkPlayer, walkPlats, walkEnemies, walkScore, walkCameraX, walkAnim;
+function startWalk() {
+  document.getElementById('walkOver').style.display = 'none';
+  walkCanvas = document.getElementById('walkCanvas');
+  walkCtx = walkCanvas.getContext('2d');
+  walkCanvas.width = walkCanvas.parentElement.clientWidth;
+  walkCanvas.height = walkCanvas.parentElement.clientHeight;
+  
+  walkGameOver = false; walkCameraX = 0; walkScore = 0; 
+  walkPlayer = { x: 50, y: walkCanvas.height - 150, w: 30, h: 30, vy: 0, vx: 0 };
+  walkPlats = [{x: 0, y: walkCanvas.height - 50, w: 400}, {x: 450, y: walkCanvas.height - 100, w: 200}];
+  walkEnemies = [{x: 200, y: walkCanvas.height - 80, w: 30, h: 30, dir: 1}];
+  document.getElementById('walkScore').textContent = 0;
+
+  // Управление (наклоны/кнопки)
+  let leftBtn = false, rightBtn = false;
+  walkCanvas.ontouchstart = (e) => {
+    let x = e.touches[0].clientX;
+    if (x < walkCanvas.width/2) leftBtn = true; else rightBtn = true;
+    if (!walkPlayer.jumping && walkPlayer.onGround) { walkPlayer.vy = -12; walkPlayer.jumping = true; }
+  };
+  walkCanvas.ontouchend = () => { leftBtn = false; rightBtn = false; };
+  
+  window.onkeydown = (e) => {
+    if(e.key==="ArrowLeft") leftBtn = true;
+    if(e.key==="ArrowRight") rightBtn = true;
+    if(e.key==="ArrowUp" && !walkPlayer.jumping) { walkPlayer.vy = -12; walkPlayer.jumping = true; }
+  };
+  window.onkeyup = (e) => {
+    if(e.key==="ArrowLeft") leftBtn = false;
+    if(e.key==="ArrowRight") rightBtn = false;
+  };
+
+  function loop() {
+    if (walkGameOver) return;
+    
+    // Физика движения
+    walkPlayer.vx = leftBtn ? -5 : (rightBtn ? 5 : 0);
+    walkPlayer.x += walkPlayer.vx;
+    walkPlayer.vy += 0.5; walkPlayer.y += walkPlayer.vy;
+    
+    // Коллизии с платформами
+    walkPlayer.onGround = false;
+    walkPlats.forEach(p => {
+      if (walkPlayer.x < p.x + p.w && walkPlayer.x + walkPlayer.w > p.x && 
+          walkPlayer.y + walkPlayer.h > p.y && walkPlayer.y + walkPlayer.h < p.y + 20 && walkPlayer.vy > 0) {
+        walkPlayer.y = p.y - walkPlayer.h; walkPlayer.vy = 0; walkPlayer.jumping = false; walkPlayer.onGround = true;
       }
     });
-    grid.appendChild(card);
-  });
 
-  if (window.Telegram && window.Telegram.WebApp) {
-    window.Telegram.WebApp.ready();
-    window.Telegram.WebApp.expand();
+    // Смерть от падения
+    if (walkPlayer.y > walkCanvas.height) return endWalk();
+
+    // Генерация платформ
+    if (walkPlats[walkPlats.length-1].x < walkCameraX + walkCanvas.width + 200) {
+      let last = walkPlats[walkPlats.length-1];
+      walkPlats.push({x: last.x + last.w + Math.random()*100 + 50, y: walkCanvas.height - Math.random()*200 - 50, w: Math.random()*100 + 50});
+      walkScore += 10; document.getElementById('walkScore').textContent = walkScore;
+    }
+
+    // Враги
+    walkEnemies.forEach(e => {
+      e.x += e.dir * 2;
+      if (Math.abs(e.x - walkPlayer.x) > 300) e.dir *= -1; // Патрулирование
+      // Столкновение с врагом
+      if (walkPlayer.x < e.x + e.w && walkPlayer.x + walkPlayer.w > e.x && 
+          walkPlayer.y < e.y + e.h && walkPlayer.y + walkPlayer.h > e.y) {
+        endWalk();
+      }
+    });
+
+    // Камера
+    walkCameraX = walkPlayer.x - walkCanvas.width / 3;
+
+    // Рендер
+    walkCtx.clearRect(0, 0, walkCanvas.width, walkCanvas.height);
+    walkCtx.save();
+    walkCtx.translate(-walkCameraX, 0);
+    
+    // Платформы
+    walkCtx.fillStyle = "#8B4513";
+    walkPlats.forEach(p => walkCtx.fillRect(p.x, p.y, p.w, 20));
+    
+    // Враги
+    walkCtx.fillStyle = "#ff4757";
+    walkEnemies.forEach(e => walkCtx.fillRect(e.x, e.y, e.w, e.h));
+
+    // Игрок
+    walkCtx.fillStyle = "#FFD700";
+    walkCtx.fillRect(walkPlayer.x, walkPlayer.y, walkPlayer.w, walkPlayer.h);
+    
+    walkCtx.restore();
+    walkAnim = requestAnimationFrame(loop);
   }
-</script>
+  loop();
+}
+function endWalk() { walkGameOver = true; document.getElementById('walkOver').style.display = 'flex'; }
 
+</script>
 </body>
 </html>
