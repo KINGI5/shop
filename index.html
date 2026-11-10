@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Мой магазин</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #f0f2f5;
+    color: #1a1a1a;
+    padding: 16px;
+    padding-bottom: 40px;
+  }
+  header {
+    text-align: center;
+    padding: 20px 0;
+  }
+  header h1 { font-size: 26px; margin-bottom: 6px; }
+  header p { color: #666; font-size: 14px; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.15s;
+  }
+  .card:active { transform: scale(0.97); }
+  .card .emoji {
+    font-size: 56px;
+    text-align: center;
+    padding: 24px 0;
+    background: linear-gradient(135deg, #e8f0ff, #f5e8ff);
+  }
+  .card .body { padding: 12px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+  .card .name { font-weight: 600; font-size: 15px; }
+  .card .desc { font-size: 12px; color: #777; flex: 1; }
+  .card .price {
+    font-weight: 700;
+    font-size: 16px;
+    color: #229ED9;
+  }
+  .card button {
+    margin-top: 6px;
+    padding: 8px;
+    border: none;
+    border-radius: 10px;
+    background: #229ED9;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .card button:active { background: #1a7fb0; }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: #1a1a1a;
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-size: 14px;
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🛍️ Мой магазин</h1>
+  <p>Выбери, что тебе нравится</p>
+</header>
+
+<div class="grid" id="grid"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+  // 👇 ТУТ МЕНЯЙ ТОВАРЫ
+  const products = [
+    { emoji: "🎨", name: "Стикерпак", desc: "Крутые стикеры для чата", price: 50 },
+    { emoji: "🕹️", name: "Скин для игры", desc: "Редкий скин персонажа", price: 150 },
+    { emoji: "📚", name: "Гайд по Python", desc: "Учимся кодить с нуля", price: 100 },
+    { emoji: "🎁", name: "Набор аватарок", desc: "10 красивых аватарок", price: 80 },
+  ];
+
+  const grid = document.getElementById("grid");
+  const toast = document.getElementById("toast");
+
+  function showToast(text) {
+    toast.textContent = text;
+    toast.classList.add("show");
+    setTimeout(() => toast.classList.remove("show"), 2000);
+  }
+
+  products.forEach(p => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <div class="emoji">${p.emoji}</div>
+      <div class="body">
+        <div class="name">${p.name}</div>
+        <div class="desc">${p.desc}</div>
+        <div class="price">${p.price} ⭐</div>
+        <button>Купить</button>
+      </div>
+    `;
+    card.querySelector("button").addEventListener("click", () => {
+      if (window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.sendData(JSON.stringify({ product: p.name, price: p.price }));
+      } else {
+        showToast(`«${p.name}» добавлен (демо)`);
+      }
+    });
+    grid.appendChild(card);
+  });
+
+  if (window.Telegram && window.Telegram.WebApp) {
+    window.Telegram.WebApp.ready();
+    window.Telegram.WebApp.expand();
+  }
+</script>
+
+</body>
+</html>
