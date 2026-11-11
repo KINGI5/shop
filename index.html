@@ -708,10 +708,16 @@ function startMinecraft() {
 // ==========================================
 // 7. HOTLINE MIAMI (С ЭТАЖАМИ)
 // ==========================================
-function startHotline() {
+ function startHotline() {
+  // Объявляем переменные, которых не хватало
+  let hotlineGameOver = true, hotlineCanvas, hotlineCtx, hotlineAnim, hlPlayer, hlEnemies, hlBullets, hlScore, hlJoyX = 0, hlJoyY = 0;
+  let hlWalls = [], hlDoors = [], hlGlass = [], hlPickups = [], hlStairs = null, hlFloor = 1;
+  let hlWeapon = "Pistol";
+
   playClick(); document.getElementById('hotlineOver').style.display = 'none';
   hotlineCanvas = document.getElementById('hotlineCanvas'); hotlineCtx = hotlineCanvas.getContext('2d');
   hotlineCanvas.width = hotlineCanvas.parentElement.clientWidth; hotlineCanvas.height = hotlineCanvas.parentElement.clientHeight;
+  
   hlPlayer = { x: 50, y: 50, r: 12, speed: 4, hp: 100 }; hlWeapon = "Pistol"; hlFloor = 1;
   document.getElementById('hlWeapon').textContent = hlWeapon; document.getElementById('hlFloor').textContent = hlFloor;
   
