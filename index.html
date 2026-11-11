@@ -317,17 +317,23 @@ let player, mapObjects, progress, currentLevel = 1, gameSpeed, jumpForce, gravit
 let unlockedLevels = parseInt(localStorage.getItem('gd_unlocked')) || 1;
 
 function showLevels() {
-  playClick(); runnerGameOver = true; runnerWin = true;
+  playClick(); 
+  runnerGameOver = true; 
+  runnerWin = true; 
+  cancelAnimationFrame(runnerAnim); // Принудительно останавливаем игру
+  
   document.getElementById('runnerOver').style.display = 'none';
   document.getElementById('runnerWin').style.display = 'none';
   document.getElementById('skinsMenu').style.display = 'none';
   document.getElementById('levelsMenu').style.display = 'flex';
+  
   if (unlockedLevels >= 2) { document.getElementById('lvl2Btn').classList.remove('locked'); document.getElementById('lock2').textContent = "▶️"; }
   if (unlockedLevels >= 3) { document.getElementById('lvl3Btn').classList.remove('locked'); document.getElementById('lock3').textContent = "▶️"; }
 }
 
 function openSkins() { playClick(); document.getElementById('levelsMenu').style.display = 'none'; document.getElementById('skinsMenu').style.display = 'flex'; updateSkinsUI(); }
 function closeSkins() { playClick(); document.getElementById('skinsMenu').style.display = 'none'; document.getElementById('levelsMenu').style.display = 'flex'; }
+
 function buySkin(skinId, price) {
   playClick();
   if (ownedSkins.includes(skinId)) { currentSkin = skinId; localStorage.setItem('gd_skin', skinId); updateSkinsUI(); } 
@@ -339,6 +345,7 @@ function buySkin(skinId, price) {
     } else { alert("Недостаточно монет! Играй больше 🪙"); }
   }
 }
+
 function updateSkinsUI() {
   for(let i=0; i<3; i++) {
     let btn = (i===0) ? document.querySelectorAll('.skin-btn')[0] : document.getElementById('skin'+i+'Btn');
@@ -352,17 +359,37 @@ function updateSkinsUI() {
 }
 
 function startRunner(level) {
-  if (level > unlockedLevels) return; playClick(); currentLevel = level;
-  document.getElementById('levelsMenu').style.display = 'none'; document.getElementById('skinsMenu').style.display = 'none';
-  document.getElementById('runnerOver').style.display = 'none'; document.getElementById('runnerWin').style.display = 'none';
+  if (level > unlockedLevels) return; 
+  playClick(); 
+  currentLevel = level;
   
-  runnerCanvas = document.getElementById('runnerCanvas'); runnerCtx = runnerCanvas.getContext('2d');
-  runnerCanvas.width = runnerCanvas.parentElement.clientWidth; runnerCanvas.height = runnerCanvas.parentElement.clientHeight;
-  runnerGameOver = false; runnerWin = false; progress = 0; mapObjects = [];
-  gameSpeed = level === 1 ? 5 : (level === 2 ? 6.5 : 8); jumpForce = -11.5; gravity = 0.65;
+  // Очистка прошлой игры
+  cancelAnimationFrame(runnerAnim);
+  document.getElementById('levelsMenu').style.display = 'none'; 
+  document.getElementById('skinsMenu').style.display = 'none';
+  document.getElementById('runnerOver').style.display = 'none'; 
+  document.getElementById('runnerWin').style.display = 'none';
+  
+  runnerCanvas = document.getElementById('runnerCanvas'); 
+  runnerCtx = runnerCanvas.getContext('2d');
+  runnerCanvas.width = runnerCanvas.parentElement.clientWidth; 
+  runnerCanvas.height = runnerCanvas.parentElement.clientHeight;
+  
+  runnerGameOver = false; 
+  runnerWin = false; 
+  progress = 0; 
+  mapObjects = [];
+  
+  // Настройки сложности от уровня
+  gameSpeed = level === 1 ? 5 : (level === 2 ? 6.5 : 8); 
+  jumpForce = -11.5; 
+  gravity = 0.65;
+  
   player = { x: 80, y: runnerCanvas.height - 100, w: 30, h: 30, vy: 0, jump: false, rot: 0, canOrbJump: false, color: SKIN_COLORS[currentSkin] };
 
-  let startX = 400; let totalDist = runnerCanvas.width * 3;
+  // Генерация уровня
+  let startX = 400; 
+  let totalDist = runnerCanvas.width * 3;
   for (let i = startX; i < totalDist; i += 350) {
     let rand = Math.random();
     if (rand < 0.3) { mapObjects.push({ type: 'spike', x: i, y: runnerCanvas.height - 70, w: 30, h: 30 }); } 
@@ -372,59 +399,132 @@ function startRunner(level) {
     else { mapObjects.push({ type: 'coin', x: i, y: runnerCanvas.height - 100, w: 20, h: 20 }); }
   }
 
-  const doJump = () => { if (runnerGameOver || runnerWin) return; if (!player.jump) { player.vy = jumpForce; player.jump = true; playClick(); } else if (player.canOrbJump) { player.vy = jumpForce - 1.5; player.canOrbJump = false; playClick(); } };
-  document.getElementById('runnerContainer').onmousedown = doJump; document.getElementById('runnerContainer').ontouchstart = (e) => { e.preventDefault(); doJump(); };
+  const doJump = () => { 
+    if (runnerGameOver || runnerWin) return; 
+    if (!player.jump) { 
+      player.vy = jumpForce; 
+      player.jump = true; 
+      playTone(600, 'square', 0.05, 0.05); // Звук прыжка
+    } else if (player.canOrbJump) { 
+      player.vy = jumpForce - 1.5; 
+      player.canOrbJump = false; 
+      playTone(900, 'square', 0.05, 0.05); // Звук прыжка с орба
+    } 
+  };
+  
+  document.getElementById('runnerContainer').onmousedown = doJump; 
+  document.getElementById('runnerContainer').ontouchstart = (e) => { e.preventDefault(); doJump(); };
 
-  cancelAnimationFrame(runnerAnim);
   function loop() {
     if (runnerGameOver || runnerWin) return;
-    player.vy += gravity; player.y += player.vy; player.rot += gameSpeed * 0.05;
+    
+    player.vy += gravity; 
+    player.y += player.vy; 
+    player.rot += gameSpeed * 0.05;
     let groundY = runnerCanvas.height - 70;
-    if (player.y > groundY - player.h + 30) { player.y = groundY - player.h + 30; player.vy = 0; player.jump = false; player.rot = Math.round(player.rot / (Math.PI/2)) * (Math.PI/2); }
-    progress += (gameSpeed / (runnerCanvas.width * 3)) * 100; document.getElementById('runnerScore').textContent = Math.floor(progress) + "%";
+    
+    if (player.y > groundY - player.h + 30) { 
+      player.y = groundY - player.h + 30; 
+      player.vy = 0; 
+      player.jump = false; 
+      player.rot = Math.round(player.rot / (Math.PI/2)) * (Math.PI/2); 
+    }
+    
+    progress += (gameSpeed / (runnerCanvas.width * 3)) * 100; 
+    document.getElementById('runnerScore').textContent = Math.floor(progress) + "%";
     
     if (progress >= 100) {
-      runnerWin = true; document.getElementById('runnerWin').style.display = 'flex';
+      runnerWin = true; 
+      document.getElementById('runnerWin').style.display = 'flex';
       if (currentLevel === unlockedLevels && unlockedLevels < 3) { unlockedLevels++; localStorage.setItem('gd_unlocked', unlockedLevels); }
       return;
     }
+    
     player.canOrbJump = false;
     for (let i = mapObjects.length - 1; i >= 0; i--) {
-      let o = mapObjects[i]; o.x -= gameSpeed;
+      let o = mapObjects[i]; 
+      o.x -= gameSpeed;
+      
       if (o.type === 'spike') {
-        let hitX = player.x + 5; let hitW = player.w - 10;
+        let hitX = player.x + 5; 
+        let hitW = player.w - 10;
         if (hitX < o.x + o.w - 5 && hitX + hitW > o.x + 5 && player.y + player.h > o.y + 10) {
-          playDeath(); runnerGameOver = true; addCoins(10); document.getElementById('runnerFinalScore').textContent = "Ты дошел до " + Math.floor(progress) + "% (+10 🪙)"; document.getElementById('runnerOver').style.display = 'flex';
+          playDeath(); 
+          runnerGameOver = true; 
+          cancelAnimationFrame(runnerAnim); // Останавливаем игру при смерти
+          addCoins(10); 
+          document.getElementById('runnerFinalScore').textContent = "Ты дошел до " + Math.floor(progress) + "% (+10 🪙)"; 
+          document.getElementById('runnerOver').style.display = 'flex';
         }
       } else if (o.type === 'block') {
-        if (player.vy > 0 && player.y + player.h > o.y && player.y + player.h < o.y + o.h + 15 && player.x + player.w > o.x && player.x < o.x + o.w) { player.y = o.y - player.h + 15; player.vy = 0; player.jump = false; player.rot = Math.round(player.rot / (Math.PI/2)) * (Math.PI/2); }
+        if (player.vy > 0 && player.y + player.h > o.y && player.y + player.h < o.y + o.h + 15 && player.x + player.w > o.x && player.x < o.x + o.w) { 
+          player.y = o.y - player.h + 15; 
+          player.vy = 0; 
+          player.jump = false; 
+          player.rot = Math.round(player.rot / (Math.PI/2)) * (Math.PI/2); 
+        }
       } else if (o.type === 'orb') {
         if (player.x < o.x + o.w && player.x + player.w > o.x && player.y < o.y + o.h && player.y + player.h > o.y) { player.canOrbJump = true; }
       } else if (o.type === 'coin') {
-        if (player.x < o.x + o.w && player.x + player.w > o.x && player.y < o.y + o.h && player.y + player.h > o.y) { addCoins(5); playTone(1200, 'sine', 0.1, 0.1); mapObjects.splice(i, 1); }
+        if (player.x < o.x + o.w && player.x + player.w > o.x && player.y < o.y + o.h && player.y + player.h > o.y) { 
+          addCoins(5); 
+          playTone(1200, 'sine', 0.1, 0.1); 
+          mapObjects.splice(i, 1); 
+        }
       }
     }
+
+    // Отрисовка
     runnerCtx.clearRect(0, 0, runnerCanvas.width, runnerCanvas.height);
-    runnerCtx.fillStyle = "#0f3460"; runnerCtx.fillRect(0, groundY + 30, runnerCanvas.width, 100);
-    runnerCtx.fillStyle = "#e94560"; runnerCtx.fillRect(0, groundY + 30, runnerCanvas.width, 4);
+    
+    // Разный фон для разных уровней
+    if (currentLevel === 1) runnerCtx.fillStyle = "#1a1a2e";
+    else if (currentLevel === 2) runnerCtx.fillStyle = "#2e1a1a";
+    else runnerCtx.fillStyle = "#1a2e1a";
+    runnerCtx.fillRect(0, 0, runnerCanvas.width, runnerCanvas.height);
+
+    runnerCtx.fillStyle = "#0f3460"; 
+    runnerCtx.fillRect(0, groundY + 30, runnerCanvas.width, 100);
+    runnerCtx.fillStyle = "#e94560"; 
+    runnerCtx.fillRect(0, groundY + 30, runnerCanvas.width, 4);
+    
     for (let o of mapObjects) {
       if (o.type === 'spike') { runnerCtx.fillStyle = "#e94560"; runnerCtx.beginPath(); runnerCtx.moveTo(o.x, o.y + o.h); runnerCtx.lineTo(o.x + o.w/2, o.y); runnerCtx.lineTo(o.x + o.w, o.y + o.h); runnerCtx.fill(); } 
       else if (o.type === 'block') { runnerCtx.fillStyle = "#f39c12"; runnerCtx.fillRect(o.x, o.y, o.w, o.h); runnerCtx.strokeStyle = "#d35400"; runnerCtx.lineWidth = 2; runnerCtx.strokeRect(o.x, o.y, o.w, o.h); } 
       else if (o.type === 'orb') { runnerCtx.beginPath(); runnerCtx.arc(o.x + o.w/2, o.y + o.h/2, o.w/2, 0, Math.PI * 2); runnerCtx.fillStyle = player.canOrbJump ? "#ffff00" : "#f1c40f"; runnerCtx.fill(); runnerCtx.strokeStyle = "#fff"; runnerCtx.lineWidth = 2; runnerCtx.stroke(); } 
       else if (o.type === 'coin') { runnerCtx.beginPath(); runnerCtx.arc(o.x + o.w/2, o.y + o.h/2, o.w/2, 0, Math.PI * 2); runnerCtx.fillStyle = "#FFD700"; runnerCtx.fill(); runnerCtx.strokeStyle = "#DAA520"; runnerCtx.lineWidth = 2; runnerCtx.stroke(); }
     }
-    runnerCtx.save(); runnerCtx.translate(player.x + player.w/2, player.y + player.h/2); runnerCtx.rotate(player.rot);
-    runnerCtx.fillStyle = player.color; runnerCtx.fillRect(-player.w/2, -player.h/2, player.w, player.h);
-    runnerCtx.strokeStyle = "#000"; runnerCtx.lineWidth = 2; runnerCtx.strokeRect(-player.w/2, -player.h/2, player.w, player.h);
-    runnerCtx.rotate(-player.rot); runnerCtx.fillStyle = "#000"; runnerCtx.fillRect(-5, -8, 4, 6); runnerCtx.fillRect(5, -8, 4, 6); 
-    runnerCtx.beginPath(); runnerCtx.arc(0, 0, 8, 0, Math.PI); runnerCtx.strokeStyle = "#000"; runnerCtx.lineWidth = 2; runnerCtx.stroke();
+    
+    runnerCtx.save(); 
+    runnerCtx.translate(player.x + player.w/2, player.y + player.h/2); 
+    runnerCtx.rotate(player.rot);
+    runnerCtx.fillStyle = player.color; 
+    runnerCtx.fillRect(-player.w/2, -player.h/2, player.w, player.h);
+    runnerCtx.strokeStyle = "#000"; 
+    runnerCtx.lineWidth = 2; 
+    runnerCtx.strokeRect(-player.w/2, -player.h/2, player.w, player.h);
+    runnerCtx.rotate(-player.rot); 
+    runnerCtx.fillStyle = "#000"; 
+    runnerCtx.fillRect(-5, -8, 4, 6); 
+    runnerCtx.fillRect(5, -8, 4, 6); 
+    runnerCtx.beginPath(); 
+    runnerCtx.arc(0, 0, 8, 0, Math.PI); 
+    runnerCtx.strokeStyle = "#000"; 
+    runnerCtx.lineWidth = 2; 
+    runnerCtx.stroke();
     runnerCtx.restore();
+
     runnerAnim = requestAnimationFrame(loop);
   }
   loop();
 }
-function nextLevel() { document.getElementById('runnerWin').style.display = 'none'; if (currentLevel < 3) startRunner(currentLevel + 1); else showLevels(); }
 
+function nextLevel() { 
+  cancelAnimationFrame(runnerAnim);
+  document.getElementById('runnerWin').style.display = 'none'; 
+  if (currentLevel < 3) startRunner(currentLevel + 1); 
+  else showLevels(); 
+}
 // ==========================================
 // 3. САПЁР
 // ==========================================
@@ -608,29 +708,29 @@ function startMinecraft() {
 // ==========================================
 // 7. HOTLINE MIAMI (С ЭТАЖАМИ)
 // ==========================================
-let hotlineGameOver = true, hotlineCanvas, hotlineCtx, hotlineAnim, hlPlayer, hlEnemies, hlBullets, hlScore, hlJoyX = 0, hlJoyY = 0;
-let hlWalls = [], hlDoors = [], hlGlass = [], hlPickups = [], hlStairs = null, hlFloor = 1;
-let hlWeapon = "Pistol";
-
 function startHotline() {
   playClick(); document.getElementById('hotlineOver').style.display = 'none';
   hotlineCanvas = document.getElementById('hotlineCanvas'); hotlineCtx = hotlineCanvas.getContext('2d');
   hotlineCanvas.width = hotlineCanvas.parentElement.clientWidth; hotlineCanvas.height = hotlineCanvas.parentElement.clientHeight;
   hlPlayer = { x: 50, y: 50, r: 12, speed: 4, hp: 100 }; hlWeapon = "Pistol"; hlFloor = 1;
   document.getElementById('hlWeapon').textContent = hlWeapon; document.getElementById('hlFloor').textContent = hlFloor;
-  buildFloor();
-
+  
   const joystick = document.getElementById('joystick'); const knob = document.getElementById('joystickKnob');
+  function resetJoystick() { knob.style.transform = "translate(0,0)"; hlJoyX = 0; hlJoyY = 0; }
+  
   joystick.ontouchstart = joystick.onmousedown = (e) => {
-    e.preventDefault(); moveJoystick(e); joystick.ontouchmove = joystick.onmousemove = (ev) => { ev.preventDefault(); moveJoystick(ev); };
-    joystick.ontouchend = joystick.onmouseup = () => { knob.style.transform = "translate(0,0)"; hlJoyX = 0; hlJoyY = 0; joystick.ontouchmove = joystick.onmousemove = null; };
+    e.preventDefault(); moveJoystick(e); 
+    joystick.ontouchmove = joystick.onmousemove = (ev) => { ev.preventDefault(); moveJoystick(ev); };
+    joystick.ontouchend = joystick.onmouseup = () => { resetJoystick(); joystick.ontouchmove = joystick.onmousemove = null; };
   };
+  
   function moveJoystick(e) {
     let rect = joystick.getBoundingClientRect(); let clientX = e.touches ? e.touches[0].clientX : e.clientX; let clientY = e.touches ? e.touches[0].clientY : e.clientY;
     let cx = rect.left + rect.width / 2; let cy = rect.top + rect.height / 2; let dx = clientX - cx; let dy = clientY - cy; let dist = Math.sqrt(dx*dx + dy*dy); let maxDist = 40;
     if (dist > maxDist) { dx = dx / dist * maxDist; dy = dy / dist * maxDist; }
     knob.style.transform = `translate(${dx}px, ${dy}px)`; hlJoyX = dx / maxDist; hlJoyY = dy / maxDist;
   }
+  
   document.getElementById('btn-shoot').ontouchstart = document.getElementById('btn-shoot').onmousedown = (e) => {
     e.preventDefault(); if(hotlineGameOver) return; playShot();
     let nearest = null; let minDist = 9999;
@@ -638,18 +738,43 @@ function startHotline() {
     if (nearest) { let angle = Math.atan2(nearest.y - hlPlayer.y, nearest.x - hlPlayer.x); hlBullets.push({ x: hlPlayer.x, y: hlPlayer.y, vx: Math.cos(angle)*12, vy: Math.sin(angle)*12, from: 'player' }); } 
     else { hlBullets.push({ x: hlPlayer.x, y: hlPlayer.y, vx: 12, vy: 0, from: 'player' }); }
   };
+  
   window.onkeydown = (e) => { if(e.key==="ArrowLeft" || e.key==="a") hlJoyX = -1; if(e.key==="ArrowRight" || e.key==="d") hlJoyX = 1; if(e.key==="ArrowUp" || e.key==="w") hlJoyY = -1; if(e.key==="ArrowDown" || e.key==="s") hlJoyY = 1; if(e.key===" " || e.key==="Enter") { document.getElementById('btn-shoot').dispatchEvent(new Event('mousedown')); } };
   window.onkeyup = (e) => { if(e.key==="ArrowLeft"||e.key==="ArrowRight"||e.key==="a"||e.key==="d") hlJoyX = 0; if(e.key==="ArrowUp"||e.key==="ArrowDown"||e.key==="w"||e.key==="s") hlJoyY = 0; };
+
+  function buildFloor() {
+    hlWalls = []; hlDoors = []; hlGlass = []; hlPickups = []; hlBullets = []; hlEnemies = []; hlScore = 0;
+    document.getElementById('hlScore').textContent = 0;
+    
+    for(let i=0; i<hotlineCanvas.width; i+=20) { hlWalls.push({x: i, y: 20}); hlWalls.push({x: i, y: hotlineCanvas.height - 20}); }
+    for(let i=0; i<hotlineCanvas.height; i+=20) { hlWalls.push({x: 20, y: i}); hlWalls.push({x: hotlineCanvas.width - 20, y: i}); }
+    
+    for(let i=100; i<hotlineCanvas.height-100; i+=20) { if(i > 150 && i < 200) hlDoors.push({x: hotlineCanvas.width/2, y: i}); else hlWalls.push({x: hotlineCanvas.width/2, y: i}); }
+    for(let i=100; i<hotlineCanvas.width-100; i+=20) { if(i > 200 && i < 250) hlGlass.push({x: i, y: hotlineCanvas.height/2}); else hlWalls.push({x: i, y: hotlineCanvas.height/2}); }
+    
+    hlGlass.push({x: 100, y: 100}); hlGlass.push({x: 100, y: 120}); hlGlass.push({x: hotlineCanvas.width - 100, y: hotlineCanvas.height - 100});
+    hlDoors.push({x: 150, y: hotlineCanvas.height - 100}); hlDoors.push({x: 170, y: hotlineCanvas.height - 100});
+
+    hlStairs = {x: hotlineCanvas.width - 50, y: hotlineCanvas.height - 50};
+    for(let i=0; i<3 + hlFloor; i++) { hlEnemies.push({ x: 100 + Math.random() * (hotlineCanvas.width - 200), y: 100 + Math.random() * (hotlineCanvas.height - 200), r: 12, speed: 2, alive: true }); }
+    hlPlayer.x = 50; hlPlayer.y = 50; hotlineGameOver = false;
+  }
+  
+  function checkWallCollision(x, y, r) { for(let w of hlWalls) { if (Math.hypot(w.x - x, w.y - y) < 20 + r) return true; } for(let d of hlDoors) { if (Math.hypot(d.x - x, d.y - y) < 20 + r) return true; } return false; }
 
   cancelAnimationFrame(hotlineAnim);
   function loop() {
     if (hotlineGameOver) return;
+    
     let nextX = hlPlayer.x + hlJoyX * hlPlayer.speed; let nextY = hlPlayer.y + hlJoyY * hlPlayer.speed;
     if (!checkWallCollision(nextX, hlPlayer.y, hlPlayer.r)) hlPlayer.x = nextX;
     if (!checkWallCollision(hlPlayer.x, nextY, hlPlayer.r)) hlPlayer.y = nextY;
+    
     hlPickups.forEach((p, index) => { if (Math.hypot(p.x - hlPlayer.x, p.y - hlPlayer.y) < 20) { hlWeapon = p.type; hlPickups.splice(index, 1); playTone(800, 'sine', 0.1); document.getElementById('hlWeapon').textContent = hlWeapon; } });
     if (hlStairs && Math.hypot(hlStairs.x - hlPlayer.x, hlStairs.y - hlPlayer.y) < 30) { hlFloor++; playTone(1000, 'sine', 0.3); document.getElementById('hlFloor').textContent = hlFloor; buildFloor(); }
+    
     hlEnemies.forEach(en => { if (!en.alive) return; let angle = Math.atan2(hlPlayer.y - en.y, hlPlayer.x - en.x); en.x += Math.cos(angle) * en.speed * 0.5; en.y += Math.sin(angle) * en.speed * 0.5; if (Math.hypot(en.x - hlPlayer.x, en.y - hlPlayer.y) < en.r + hlPlayer.r) { playDeath(); hotlineGameOver = true; addCoins(hlScore * 5); document.getElementById('hotlineOver').style.display = 'flex'; } });
+    
     for (let i = hlBullets.length - 1; i >= 0; i--) {
       let b = hlBullets[i]; b.x += b.vx; b.y += b.vy; 
       if (checkWallCollision(b.x, b.y, 2)) { hlBullets.splice(i, 1); continue; }
@@ -659,6 +784,7 @@ function startHotline() {
       if(!hlBullets[i]) continue;
       if (b.from === 'player') { for (let en of hlEnemies) { if (!en.alive) continue; if (Math.hypot(en.x - b.x, en.y - b.y) < en.r) { en.alive = false; hlBullets.splice(i, 1); hlScore++; document.getElementById('hlScore').textContent = hlScore; hlPickups.push({x: en.x, y: en.y, type: Math.random() > 0.5 ? "Shotgun" : "SMG"}); break; } } }
     }
+
     hotlineCtx.fillStyle = "#222"; hotlineCtx.fillRect(0, 0, hotlineCanvas.width, hotlineCanvas.height);
     hotlineCtx.fillStyle = "#555"; hlWalls.forEach(w => hotlineCtx.fillRect(w.x - 10, w.y - 10, 20, 20));
     hotlineCtx.fillStyle = "#8B4513"; hlDoors.forEach(d => hotlineCtx.fillRect(d.x - 10, d.y - 10, 20, 20));
@@ -668,23 +794,12 @@ function startHotline() {
     hlEnemies.forEach(en => { if(en.alive) { hotlineCtx.fillStyle = "#ff4757"; hotlineCtx.fillRect(en.x - 10, en.y - 10, 20, 20); hotlineCtx.fillStyle = "#f1c27d"; hotlineCtx.beginPath(); hotlineCtx.arc(en.x, en.y, 6, 0, Math.PI*2); hotlineCtx.fill(); } });
     hotlineCtx.fillStyle = "#f1c40f"; hlBullets.forEach(b => { hotlineCtx.beginPath(); hotlineCtx.arc(b.x, b.y, 4, 0, Math.PI*2); hotlineCtx.fill(); });
     hotlineCtx.fillStyle = "#2ed573"; hotlineCtx.fillRect(hlPlayer.x - 10, hlPlayer.y - 10, 20, 20); hotlineCtx.fillStyle = "#f1c27d"; hotlineCtx.beginPath(); hotlineCtx.arc(hlPlayer.x, hlPlayer.y, 6, 0, Math.PI*2); hotlineCtx.fill();
+    
     hotlineAnim = requestAnimationFrame(loop);
   }
-  function checkWallCollision(x, y, r) { for(let w of hlWalls) { if (Math.hypot(w.x - x, w.y - y) < 20 + r) return true; } for(let d of hlDoors) { if (Math.hypot(d.x - x, d.y - y) < 20 + r) return true; } return false; }
-  function buildFloor() {
-    hlWalls = []; hlDoors = []; hlGlass = []; hlPickups = []; hlBullets = []; hlEnemies = []; hlScore = 0;
-    document.getElementById('hlScore').textContent = 0;
-    for(let i=0; i<hotlineCanvas.width; i+=20) { hlWalls.push({x: i, y: 20}); hlWalls.push({x: i, y: hotlineCanvas.height - 20}); }
-    for(let i=0; i<hotlineCanvas.height; i+=20) { hlWalls.push({x: 20, y: i}); hlWalls.push({x: hotlineCanvas.width - 20, y: i}); }
-    for(let i=100; i<hotlineCanvas.height-100; i+=20) hlWalls.push({x: hotlineCanvas.width/2, y: i});
-    hlDoors.push({x: hotlineCanvas.width/2, y: 150}); hlGlass.push({x: 100, y: hotlineCanvas.height/2}); hlGlass.push({x: 120, y: hotlineCanvas.height/2});
-    hlStairs = {x: hotlineCanvas.width - 50, y: hotlineCanvas.height - 50};
-    for(let i=0; i<3 + hlFloor; i++) { hlEnemies.push({ x: 100 + Math.random() * (hotlineCanvas.width - 200), y: 100 + Math.random() * (hotlineCanvas.height - 200), r: 12, speed: 2, alive: true }); }
-    hlPlayer.x = 50; hlPlayer.y = 50; hotlineGameOver = false;
-  }
-  buildLoop();
-  function buildLoop() { buildFloor(); loop(); }
-  buildFloor(); loop();
+  
+  buildFloor(); 
+  loop();
 }
 </script>
 </body>
