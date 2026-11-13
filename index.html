@@ -709,104 +709,259 @@ function startMinecraft() {
 // 7. HOTLINE MIAMI (С ЭТАЖАМИ)
 // ==========================================
  function startHotline() {
-  // Объявляем переменные, которых не хватало
-  let hotlineGameOver = true, hotlineCanvas, hotlineCtx, hotlineAnim, hlPlayer, hlEnemies, hlBullets, hlScore, hlJoyX = 0, hlJoyY = 0;
-  let hlWalls = [], hlDoors = [], hlGlass = [], hlPickups = [], hlStairs = null, hlFloor = 1;
-  let hlWeapon = "Pistol";
-
-  playClick(); document.getElementById('hotlineOver').style.display = 'none';
-  hotlineCanvas = document.getElementById('hotlineCanvas'); hotlineCtx = hotlineCanvas.getContext('2d');
+  let hotlineCanvas = document.getElementById('hotlineCanvas'), hotlineCtx = hotlineCanvas.getContext('2d');
   hotlineCanvas.width = hotlineCanvas.parentElement.clientWidth; hotlineCanvas.height = hotlineCanvas.parentElement.clientHeight;
   
-  hlPlayer = { x: 50, y: 50, r: 12, speed: 4, hp: 100 }; hlWeapon = "Pistol"; hlFloor = 1;
-  document.getElementById('hlWeapon').textContent = hlWeapon; document.getElementById('hlFloor').textContent = hlFloor;
+  let hotlineGameOver = false, hotlineAnim;
+  let hlPlayer = { x: 100, y: 100, r: 12, speed: 4, hp: 1, angle: 0 };
+  let hlEnemies = [], hlBullets = [], hlWalls = [], hlDoors = [], hlGlass = [], hlPickups = [], hlStairs = null, hlExitCar = null;
+  let hlWeapon = "Pistol", hlScore = 0, hlFloor = 1;
   
-  const joystick = document.getElementById('joystick'); const knob = document.getElementById('joystickKnob');
-  function resetJoystick() { knob.style.transform = "translate(0,0)"; hlJoyX = 0; hlJoyY = 0; }
+  let joyL = { x: 0, y: 0 }, joyR = { x: 0, y: 0 };
   
-  joystick.ontouchstart = joystick.onmousedown = (e) => {
-    e.preventDefault(); moveJoystick(e); 
-    joystick.ontouchmove = joystick.onmousemove = (ev) => { ev.preventDefault(); moveJoystick(ev); };
-    joystick.ontouchend = joystick.onmouseup = () => { resetJoystick(); joystick.ontouchmove = joystick.onmousemove = null; };
-  };
-  
-  function moveJoystick(e) {
-    let rect = joystick.getBoundingClientRect(); let clientX = e.touches ? e.touches[0].clientX : e.clientX; let clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    let cx = rect.left + rect.width / 2; let cy = rect.top + rect.height / 2; let dx = clientX - cx; let dy = clientY - cy; let dist = Math.sqrt(dx*dx + dy*dy); let maxDist = 40;
-    if (dist > maxDist) { dx = dx / dist * maxDist; dy = dy / dist * maxDist; }
-    knob.style.transform = `translate(${dx}px, ${dy}px)`; hlJoyX = dx / maxDist; hlJoyY = dy / maxDist;
-  }
-  
-  document.getElementById('btn-shoot').ontouchstart = document.getElementById('btn-shoot').onmousedown = (e) => {
-    e.preventDefault(); if(hotlineGameOver) return; playShot();
-    let nearest = null; let minDist = 9999;
-    hlEnemies.forEach(en => { if (!en.alive) return; let d = Math.hypot(en.x - hlPlayer.x, en.y - hlPlayer.y); if (d < minDist) { minDist = d; nearest = en; } });
-    if (nearest) { let angle = Math.atan2(nearest.y - hlPlayer.y, nearest.x - hlPlayer.x); hlBullets.push({ x: hlPlayer.x, y: hlPlayer.y, vx: Math.cos(angle)*12, vy: Math.sin(angle)*12, from: 'player' }); } 
-    else { hlBullets.push({ x: hlPlayer.x, y: hlPlayer.y, vx: 12, vy: 0, from: 'player' }); }
-  };
-  
-  window.onkeydown = (e) => { if(e.key==="ArrowLeft" || e.key==="a") hlJoyX = -1; if(e.key==="ArrowRight" || e.key==="d") hlJoyX = 1; if(e.key==="ArrowUp" || e.key==="w") hlJoyY = -1; if(e.key==="ArrowDown" || e.key==="s") hlJoyY = 1; if(e.key===" " || e.key==="Enter") { document.getElementById('btn-shoot').dispatchEvent(new Event('mousedown')); } };
-  window.onkeyup = (e) => { if(e.key==="ArrowLeft"||e.key==="ArrowRight"||e.key==="a"||e.key==="d") hlJoyX = 0; if(e.key==="ArrowUp"||e.key==="ArrowDown"||e.key==="w"||e.key==="s") hlJoyY = 0; };
+  let gameState = 'car'; 
+  let carX = -200; 
+  let rainDrops = [];
+  let creditsY = hotlineCanvas.height;
 
+  document.getElementById('hlScore').textContent = 0; document.getElementById('hlFloor').textContent = 1;
+
+  // --- ЛЕВЫЙ СТИК (ХОДЬБА) ---
+  const leftStick = document.getElementById('joystick'), leftKnob = document.getElementById('joystickKnob');
+  function moveLeft(e) {
+    let r = leftStick.getBoundingClientRect(), cX = e.touches ? e.touches[0].clientX : e.clientX, cY = e.touches ? e.touches[0].clientY : e.clientY;
+    let dx = cX - (r.left + r.width/2), dy = cY - (r.top + r.height/2), dist = Math.hypot(dx, dy), max = 40;
+    if (dist > max) { dx = dx/dist*max; dy = dy/dist*max; }
+    leftKnob.style.transform = `translate(${dx}px, ${dy}px)`; joyL = { x: dx/max, y: dy/max };
+  }
+  leftStick.addEventListener("touchstart", (e) => { e.preventDefault(); moveLeft(e); document.addEventListener("touchmove", moveLeft, {passive:false}); document.addEventListener("touchend", stopLeft); }, {passive:false});
+  leftStick.addEventListener("mousedown", (e) => { moveLeft(e); document.addEventListener("mousemove", moveLeft); document.addEventListener("mouseup", stopLeft); });
+  function stopLeft() { leftKnob.style.transform = "translate(0,0)"; joyL = {x:0, y:0}; document.removeEventListener("touchmove", moveLeft); document.removeEventListener("mousemove", moveLeft); document.removeEventListener("touchend", stopLeft); document.removeEventListener("mouseup", stopLeft); }
+
+  // --- ПРАВЫЙ СТИК (СТРЕЛЬБА) ---
+  const rightStick = document.getElementById('joystickRight'), rightKnob = document.getElementById('joystickKnobRight');
+  function moveRight(e) {
+    if (gameState !== 'play' && gameState !== 'escape') return;
+    let r = rightStick.getBoundingClientRect(), cX = e.touches ? e.touches[0].clientX : e.clientX, cY = e.touches ? e.touches[0].clientY : e.clientY;
+    let dx = cX - (r.left + r.width/2), dy = cY - (r.top + r.height/2), dist = Math.hypot(dx, dy), max = 40;
+    if (dist > max) { dx = dx/dist*max; dy = dy/dist*max; }
+    rightKnob.style.transform = `translate(${dx}px, ${dy}px)`; joyR = { x: dx/max, y: dy/max };
+    if (dist > 15 && gameState === 'play') { 
+      hlPlayer.angle = Math.atan2(joyR.y, joyR.x);
+      if (!window.lastShot || Date.now() - window.lastShot > 250) { shoot(); window.lastShot = Date.now(); }
+    }
+  }
+  rightStick.addEventListener("touchstart", (e) => { e.preventDefault(); moveRight(e); document.addEventListener("touchmove", moveRight, {passive:false}); document.addEventListener("touchend", stopRight); }, {passive:false});
+  rightStick.addEventListener("mousedown", (e) => { moveRight(e); document.addEventListener("mousemove", moveRight); document.addEventListener("mouseup", stopRight); });
+  function stopRight() { rightKnob.style.transform = "translate(0,0)"; joyR = {x:0, y:0}; document.removeEventListener("touchmove", moveRight); document.removeEventListener("mousemove", moveRight); document.removeEventListener("touchend", stopRight); document.removeEventListener("mouseup", stopRight); }
+
+  function shoot() {
+    if (hlWeapon === "Shotgun") playTone(150, 'sawtooth', 0.2); else playTone(300, 'square', 0.1);
+    hlBullets.push({ x: hlPlayer.x, y: hlPlayer.y, vx: Math.cos(hlPlayer.angle)*15, vy: Math.sin(hlPlayer.angle)*15, from: 'player' });
+  }
+
+  // --- ГЕНЕРАЦИЯ УРОВНЯ ---
   function buildFloor() {
     hlWalls = []; hlDoors = []; hlGlass = []; hlPickups = []; hlBullets = []; hlEnemies = []; hlScore = 0;
     document.getElementById('hlScore').textContent = 0;
+    document.getElementById('hlFloor').textContent = hlFloor; 
     
-    for(let i=0; i<hotlineCanvas.width; i+=20) { hlWalls.push({x: i, y: 20}); hlWalls.push({x: i, y: hotlineCanvas.height - 20}); }
-    for(let i=0; i<hotlineCanvas.height; i+=20) { hlWalls.push({x: 20, y: i}); hlWalls.push({x: hotlineCanvas.width - 20, y: i}); }
+    let w = hotlineCanvas.width, h = hotlineCanvas.height;
     
-    for(let i=100; i<hotlineCanvas.height-100; i+=20) { if(i > 150 && i < 200) hlDoors.push({x: hotlineCanvas.width/2, y: i}); else hlWalls.push({x: hotlineCanvas.width/2, y: i}); }
-    for(let i=100; i<hotlineCanvas.width-100; i+=20) { if(i > 200 && i < 250) hlGlass.push({x: i, y: hotlineCanvas.height/2}); else hlWalls.push({x: i, y: hotlineCanvas.height/2}); }
-    
-    hlGlass.push({x: 100, y: 100}); hlGlass.push({x: 100, y: 120}); hlGlass.push({x: hotlineCanvas.width - 100, y: hotlineCanvas.height - 100});
-    hlDoors.push({x: 150, y: hotlineCanvas.height - 100}); hlDoors.push({x: 170, y: hotlineCanvas.height - 100});
+    for(let i=0; i<w; i+=20) { hlWalls.push({x: i, y: 20}); hlWalls.push({x: i, y: h - 20}); }
+    for(let i=0; i<h; i+=20) { hlWalls.push({x: 20, y: i}); hlWalls.push({x: w - 20, y: i}); }
 
-    hlStairs = {x: hotlineCanvas.width - 50, y: hotlineCanvas.height - 50};
-    for(let i=0; i<3 + hlFloor; i++) { hlEnemies.push({ x: 100 + Math.random() * (hotlineCanvas.width - 200), y: 100 + Math.random() * (hotlineCanvas.height - 200), r: 12, speed: 2, alive: true }); }
-    hlPlayer.x = 50; hlPlayer.y = 50; hotlineGameOver = false;
+    if (hlFloor === 1 || hlFloor === 2) {
+        for(let i=100; i<h-100; i+=20) { if (i < h/2 - 50 || i > h/2 + 50) hlWalls.push({x: w/2, y: i}); }
+        hlDoors.push({x: w/2, y: 150}, {x: w/2, y: 170});
+        hlGlass.push({x: 100, y: 100}, {x: 120, y: 100});
+    } else if (hlFloor === 3 || hlFloor === 4) {
+        for(let i=100; i<h-100; i+=20) { if (i < h/2 - 40 || i > h/2 + 40) hlWalls.push({x: w/2, y: i}); }
+        for(let i=100; i<w-100; i+=20) { if (i < w/2 - 40 || i > w/2 + 40) hlWalls.push({x: i, y: h/2}); }
+        hlDoors.push({x: w/2, y: h/2 - 80}, {x: w/2, y: h/2 + 80});
+        hlGlass.push({x: w/2 - 80, y: h/2}, {x: w/2 + 80, y: h/2});
+    } else if (hlFloor === 5 || hlFloor === 6) {
+        for(let i=100; i<h-100; i+=20) { if (i % 60 !== 0) hlWalls.push({x: w/3, y: i}); }
+        for(let i=100; i<h-100; i+=20) { if (i % 60 !== 0) hlWalls.push({x: 2*w/3, y: i}); }
+        hlDoors.push({x: w/3, y: 200}, {x: 2*w/3, y: 300});
+        hlGlass.push({x: 100, y: h/3}, {x: w-100, y: 2*h/3});
+    } else {
+        for(let i=100; i<h-100; i+=20) { hlWalls.push({x: w/4, y: i}); hlWalls.push({x: 3*w/4, y: i}); }
+        for(let i=100; i<w-100; i+=20) { hlWalls.push({x: i, y: h/4}); hlWalls.push({x: i, y: 3*h/4}); }
+        hlDoors.push({x: w/4, y: h/2}, {x: 3*w/4, y: h/2}, {x: w/2, y: h/4}, {x: w/2, y: 3*h/4});
+        hlGlass.push({x: w/4, y: h/4}, {x: 3*w/4, y: 3*h/4});
+    }
+
+    if (hlFloor < 10) hlStairs = {x: w - 60, y: h - 60};
+    else hlStairs = null; 
+
+    let enemyCount = 3 + Math.floor(hlFloor * 1.5);
+    let enemySpeed = 1.2 + (hlFloor * 0.15);
+    let enemyTypes = ["Pistol", "Shotgun", "SMG", "Knife"];
+
+    for(let i=0; i<enemyCount; i++) { 
+        let enWeapon = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
+        let spawnX, spawnY;
+        do { spawnX = 150 + Math.random() * (w - 300); spawnY = 150 + Math.random() * (h - 300); } while (Math.hypot(spawnX - 60, spawnY - 60) < 250);
+        hlEnemies.push({ x: spawnX, y: spawnY, r: 12, speed: enemySpeed, alive: true, weapon: enWeapon, state: 'patrol', patrolTimer: 0, dir: Math.random() * Math.PI * 2 }); 
+    }
+    
+    hlWalls = hlWalls.filter(wall => !hlDoors.some(d => d.x === wall.x && d.y === wall.y) && !hlGlass.some(g => g.x === wall.x && g.y === wall.y));
+    hlPlayer.x = 60; hlPlayer.y = 60; 
   }
-  
-  function checkWallCollision(x, y, r) { for(let w of hlWalls) { if (Math.hypot(w.x - x, w.y - y) < 20 + r) return true; } for(let d of hlDoors) { if (Math.hypot(d.x - x, d.y - y) < 20 + r) return true; } return false; }
 
+  function checkWallCollision(x, y, r) { 
+    for(let wall of hlWalls) { if (Math.hypot(wall.x - x, wall.y - y) < 20 + r) return true; } 
+    for(let door of hlDoors) { if (Math.hypot(door.x - x, door.y - y) < 20 + r) return true; } 
+    return false; 
+  }
+
+  // --- ИГРОВОЙ ЦИКЛ ---
   cancelAnimationFrame(hotlineAnim);
   function loop() {
     if (hotlineGameOver) return;
+    hotlineCtx.fillStyle = "#111"; hotlineCtx.fillRect(0, 0, hotlineCanvas.width, hotlineCanvas.height);
     
-    let nextX = hlPlayer.x + hlJoyX * hlPlayer.speed; let nextY = hlPlayer.y + hlJoyY * hlPlayer.speed;
-    if (!checkWallCollision(nextX, hlPlayer.y, hlPlayer.r)) hlPlayer.x = nextX;
-    if (!checkWallCollision(hlPlayer.x, nextY, hlPlayer.r)) hlPlayer.y = nextY;
-    
-    hlPickups.forEach((p, index) => { if (Math.hypot(p.x - hlPlayer.x, p.y - hlPlayer.y) < 20) { hlWeapon = p.type; hlPickups.splice(index, 1); playTone(800, 'sine', 0.1); document.getElementById('hlWeapon').textContent = hlWeapon; } });
-    if (hlStairs && Math.hypot(hlStairs.x - hlPlayer.x, hlStairs.y - hlPlayer.y) < 30) { hlFloor++; playTone(1000, 'sine', 0.3); document.getElementById('hlFloor').textContent = hlFloor; buildFloor(); }
-    
-    hlEnemies.forEach(en => { if (!en.alive) return; let angle = Math.atan2(hlPlayer.y - en.y, hlPlayer.x - en.x); en.x += Math.cos(angle) * en.speed * 0.5; en.y += Math.sin(angle) * en.speed * 0.5; if (Math.hypot(en.x - hlPlayer.x, en.y - hlPlayer.y) < en.r + hlPlayer.r) { playDeath(); hotlineGameOver = true; addCoins(hlScore * 5); document.getElementById('hotlineOver').style.display = 'flex'; } });
-    
-    for (let i = hlBullets.length - 1; i >= 0; i--) {
-      let b = hlBullets[i]; b.x += b.vx; b.y += b.vy; 
-      if (checkWallCollision(b.x, b.y, 2)) { hlBullets.splice(i, 1); continue; }
-      for (let j = hlDoors.length - 1; j >= 0; j--) { if (Math.hypot(hlDoors[j].x - b.x, hlDoors[j].y - b.y) < 20) { hlDoors.splice(j, 1); hlBullets.splice(i, 1); playTone(200, 'square', 0.1); break; } }
-      if(!hlBullets[i]) continue;
-      for (let j = hlGlass.length - 1; j >= 0; j--) { if (Math.hypot(hlGlass[j].x - b.x, hlGlass[j].y - b.y) < 20) { hlGlass.splice(j, 1); hlBullets.splice(i, 1); playTone(900, 'sine', 0.1); break; } }
-      if(!hlBullets[i]) continue;
-      if (b.from === 'player') { for (let en of hlEnemies) { if (!en.alive) continue; if (Math.hypot(en.x - b.x, en.y - b.y) < en.r) { en.alive = false; hlBullets.splice(i, 1); hlScore++; document.getElementById('hlScore').textContent = hlScore; hlPickups.push({x: en.x, y: en.y, type: Math.random() > 0.5 ? "Shotgun" : "SMG"}); break; } } }
+    // 1. АНИМАЦИЯ ПРИЕЗДА
+    if (gameState === 'car') {
+        carX += 3; hotlineCtx.fillStyle = "#000"; hotlineCtx.fillRect(carX, hotlineCanvas.height/2 - 30, 160, 60);
+        hotlineCtx.fillStyle = "#555"; hotlineCtx.fillRect(carX + 20, hotlineCanvas.height/2 - 25, 120, 50); 
+        hotlineCtx.fillStyle = "#222"; hotlineCtx.beginPath(); hotlineCtx.arc(carX + 40, hotlineCanvas.height/2 + 30, 15, 0, Math.PI*2); hotlineCtx.fill(); hotlineCtx.beginPath(); hotlineCtx.arc(carX + 120, hotlineCanvas.height/2 + 30, 15, 0, Math.PI*2); hotlineCtx.fill();
+        if (carX > hotlineCanvas.width/2) { setTimeout(() => { gameState = 'play'; buildFloor(); }, 1000); }
+        hotlineCtx.fillStyle = "#fff"; hotlineCtx.font = "20px Arial"; hotlineCtx.fillText("Выход на задание...", 20, 40);
+        hotlineAnim = requestAnimationFrame(loop); return;
     }
 
-    hotlineCtx.fillStyle = "#222"; hotlineCtx.fillRect(0, 0, hotlineCanvas.width, hotlineCanvas.height);
-    hotlineCtx.fillStyle = "#555"; hlWalls.forEach(w => hotlineCtx.fillRect(w.x - 10, w.y - 10, 20, 20));
-    hotlineCtx.fillStyle = "#8B4513"; hlDoors.forEach(d => hotlineCtx.fillRect(d.x - 10, d.y - 10, 20, 20));
-    hotlineCtx.fillStyle = "rgba(52, 152, 219, 0.5)"; hlGlass.forEach(g => hotlineCtx.fillRect(g.x - 10, g.y - 10, 20, 20));
-    if(hlStairs) { hotlineCtx.fillStyle = "#f1c40f"; hotlineCtx.fillRect(hlStairs.x - 15, hlStairs.y - 15, 30, 30); }
-    hotlineCtx.fillStyle = "#2ed573"; hlPickups.forEach(p => hotlineCtx.fillRect(p.x - 5, p.y - 5, 10, 10));
-    hlEnemies.forEach(en => { if(en.alive) { hotlineCtx.fillStyle = "#ff4757"; hotlineCtx.fillRect(en.x - 10, en.y - 10, 20, 20); hotlineCtx.fillStyle = "#f1c27d"; hotlineCtx.beginPath(); hotlineCtx.arc(en.x, en.y, 6, 0, Math.PI*2); hotlineCtx.fill(); } });
-    hotlineCtx.fillStyle = "#f1c40f"; hlBullets.forEach(b => { hotlineCtx.beginPath(); hotlineCtx.arc(b.x, b.y, 4, 0, Math.PI*2); hotlineCtx.fill(); });
-    hotlineCtx.fillStyle = "#2ed573"; hotlineCtx.fillRect(hlPlayer.x - 10, hlPlayer.y - 10, 20, 20); hotlineCtx.fillStyle = "#f1c27d"; hotlineCtx.beginPath(); hotlineCtx.arc(hlPlayer.x, hlPlayer.y, 6, 0, Math.PI*2); hotlineCtx.fill();
-    
-    hotlineAnim = requestAnimationFrame(loop);
+    // 2. ИГРА / ПОБЕГ
+    if (gameState === 'play' || gameState === 'escape') {
+        let nextX = hlPlayer.x + joyL.x * hlPlayer.speed; let nextY = hlPlayer.y + joyL.y * hlPlayer.speed;
+        if (!checkWallCollision(nextX, hlPlayer.y, hlPlayer.r)) hlPlayer.x = nextX;
+        if (!checkWallCollision(hlPlayer.x, nextY, hlPlayer.r)) hlPlayer.y = nextY;
+        
+        if (gameState === 'play') {
+            hlPickups.forEach((p, index) => { if (Math.hypot(p.x - hlPlayer.x, p.y - hlPlayer.y) < 20) { hlWeapon = p.type; hlPickups.splice(index, 1); playTone(800, 'sine', 0.1); document.getElementById('hlWeapon').textContent = hlWeapon; } });
+            if (hlStairs && Math.hypot(hlStairs.x - hlPlayer.x, hlStairs.y - hlPlayer.y) < 30) { hlFloor++; if(hlFloor > 10) hlFloor = 10; playTone(1000, 'sine', 0.3); buildFloor(); }
+            
+            hlEnemies.forEach(en => { 
+                if (!en.alive) return; 
+                let dist = Math.hypot(en.x - hlPlayer.x, en.y - hlPlayer.y);
+                let angle = Math.atan2(hlPlayer.y - en.y, hlPlayer.x - en.x);
+                if (dist < 250) { 
+                    en.state = 'chase'; 
+                    let nx = en.x + Math.cos(angle) * en.speed, ny = en.y + Math.sin(angle) * en.speed;
+                    if(!checkWallCollision(nx, en.y, en.r)) en.x = nx;
+                    if(!checkWallCollision(en.x, ny, en.r)) en.y = ny;
+                    if (en.weapon !== "Knife" && (!en.lastShot || Date.now() - en.lastShot > 1000)) { hlBullets.push({ x: en.x, y: en.y, vx: Math.cos(angle)*8, vy: Math.sin(angle)*8, from: 'enemy' }); en.lastShot = Date.now(); } 
+                } 
+                else { 
+                    en.state = 'patrol'; en.patrolTimer++; 
+                    if (en.patrolTimer > 60) { en.dir = Math.random() * Math.PI * 2; en.patrolTimer = 0; } 
+                    let nx = en.x + Math.cos(en.dir) * 0.8, ny = en.y + Math.sin(en.dir) * 0.8; 
+                    if (checkWallCollision(nx, en.y, en.r) || checkWallCollision(en.x, ny, en.r)) en.dir += Math.PI; 
+                    else { en.x = nx; en.y = ny; } 
+                }
+                if (dist < en.r + hlPlayer.r) { playDeath(); hotlineGameOver = true; document.getElementById('hotlineOver').style.display = 'flex'; }
+            });
+
+            for (let i = hlBullets.length - 1; i >= 0; i--) {
+              let b = hlBullets[i]; b.x += b.vx; b.y += b.vy; 
+              if (checkWallCollision(b.x, b.y, 2)) { hlBullets.splice(i, 1); continue; }
+              for (let j = hlDoors.length - 1; j >= 0; j--) { if (Math.hypot(hlDoors[j].x - b.x, hlDoors[j].y - b.y) < 20) { hlDoors.splice(j, 1); hlBullets.splice(i, 1); playTone(200, 'square', 0.1); break; } }
+              if(!hlBullets[i]) continue;
+              for (let j = hlGlass.length - 1; j >= 0; j--) { if (Math.hypot(hlGlass[j].x - b.x, hlGlass[j].y - b.y) < 20) { hlGlass.splice(j, 1); hlBullets.splice(i, 1); playTone(900, 'sine', 0.1); break; } }
+              if(!hlBullets[i]) continue;
+              
+              if (b.from === 'player') { for (let en of hlEnemies) { if (!en.alive) continue; if (Math.hypot(en.x - b.x, en.y - b.y) < en.r) { en.alive = false; hlBullets.splice(i, 1); hlScore++; document.getElementById('hlScore').textContent = hlScore; hlPickups.push({x: en.x, y: en.y, type: en.weapon}); break; } } }
+              else if (b.from === 'enemy') { if (Math.hypot(hlPlayer.x - b.x, hlPlayer.y - b.y) < hlPlayer.r + 4) { playDeath(); hotlineGameOver = true; document.getElementById('hotlineOver').style.display = 'flex'; } }
+            }
+
+            if (hlFloor === 10 && hlEnemies.every(en => !en.alive)) {
+                gameState = 'escape';
+                hlExitCar = { x: 80, y: hotlineCanvas.height - 80 }; 
+            }
+        }
+
+        if (gameState === 'escape') {
+            if (hlExitCar && Math.hypot(hlExitCar.x - hlPlayer.x, hlExitCar.y - hlPlayer.y) < 50) {
+                gameState = 'credits';
+                carX = hlExitCar.x;
+                playTone(100, 'sawtooth', 1); 
+                for(let i=0; i<100; i++) { rainDrops.push({x: Math.random()*hotlineCanvas.width, y: Math.random()*hotlineCanvas.height, speed: 10 + Math.random()*10}); }
+            }
+        }
+
+        // Отрисовка игрового процесса
+        hotlineCtx.fillStyle = "#222"; hotlineCtx.fillRect(0, 0, hotlineCanvas.width, hotlineCanvas.height);
+        if (gameState === 'escape') {
+            hotlineCtx.fillStyle = "#ff4757"; hotlineCtx.font = "bold 20px Arial"; hotlineCtx.textAlign = "center";
+            hotlineCtx.fillText("ЗАДАНИЕ ВЫПОЛНЕНО! ВЕРНИСЬ К МАШИНЕ (ВНИЗУ)", hotlineCanvas.width/2, 50);
+            hotlineCtx.textAlign = "left"; 
+        }
+
+        hotlineCtx.fillStyle = "#555"; hlWalls.forEach(w => hotlineCtx.fillRect(w.x - 10, w.y - 10, 20, 20));
+        hotlineCtx.fillStyle = "#8B4513"; hlDoors.forEach(d => hotlineCtx.fillRect(d.x - 10, d.y - 10, 20, 20));
+        hotlineCtx.fillStyle = "rgba(52, 152, 219, 0.5)"; hlGlass.forEach(g => hotlineCtx.fillRect(g.x - 10, g.y - 10, 20, 20));
+        if(hlStairs) { hotlineCtx.fillStyle = "#f1c40f"; hotlineCtx.fillRect(hlStairs.x - 15, hlStairs.y - 15, 30, 30); hotlineCtx.fillStyle = "#333"; for(let i=0; i<3; i++) hotlineCtx.fillRect(hlStairs.x - 15, hlStairs.y - 10 + i*8, 30, 3); }
+        
+        if(hlExitCar) {
+            hotlineCtx.fillStyle = "#000"; hotlineCtx.fillRect(hlExitCar.x - 80, hlExitCar.y - 30, 160, 60);
+            hotlineCtx.fillStyle = "#555"; hotlineCtx.fillRect(hlExitCar.x - 60, hlExitCar.y - 25, 120, 50); 
+            hotlineCtx.fillStyle = "#222"; hotlineCtx.beginPath(); hotlineCtx.arc(hlExitCar.x - 40, hlExitCar.y + 30, 15, 0, Math.PI*2); hotlineCtx.fill(); hotlineCtx.beginPath(); hotlineCtx.arc(hlExitCar.x + 40, hlExitCar.y + 30, 15, 0, Math.PI*2); hotlineCtx.fill();
+        }
+
+        hotlineCtx.fillStyle = "#2ed573"; hlPickups.forEach(p => hotlineCtx.fillRect(p.x - 5, p.y - 5, 10, 10));
+        hlEnemies.forEach(en => { 
+            if(en.alive) { 
+                hotlineCtx.save(); hotlineCtx.translate(en.x, en.y); hotlineCtx.fillStyle = "#ff4757"; hotlineCtx.fillRect(-10, -10, 20, 20); hotlineCtx.fillStyle = "#f1c27d"; hotlineCtx.beginPath(); hotlineCtx.arc(0, 0, 6, 0, Math.PI*2); hotlineCtx.fill(); hotlineCtx.font = "16px Arial"; hotlineCtx.textAlign = "center"; hotlineCtx.textBaseline = "middle"; let eGun = (en.weapon === "Shotgun") ? "💥" : (en.weapon === "Knife" ? "🔪" : "🔫"); hotlineCtx.fillText(eGun, 14, 0); hotlineCtx.restore();
+            } 
+        });
+        hotlineCtx.fillStyle = "#f1c40f"; hlBullets.forEach(b => { hotlineCtx.beginPath(); hotlineCtx.arc(b.x, b.y, 4, 0, Math.PI*2); hotlineCtx.fill(); });
+
+        hotlineCtx.save(); hotlineCtx.translate(hlPlayer.x, hlPlayer.y); hotlineCtx.rotate(hlPlayer.angle);
+        hotlineCtx.fillStyle = "#2ed573"; hotlineCtx.fillRect(-10, -10, 20, 20);
+        hotlineCtx.fillStyle = "#f1c27d"; hotlineCtx.beginPath(); hotlineCtx.arc(0, 0, 6, 0, Math.PI*2); hotlineCtx.fill();
+        hotlineCtx.font = "20px Arial"; hotlineCtx.textAlign = "center"; hotlineCtx.textBaseline = "middle";
+        let gunEmoji = (hlWeapon === "Shotgun") ? "💥" : (hlWeapon === "Knife" ? "🔪" : "🔫"); hotlineCtx.fillText(gunEmoji, 18, 0); 
+        hotlineCtx.restore();
+
+        hotlineAnim = requestAnimationFrame(loop);
+    }
+
+    // 3. ТИТРЫ С ДОЖДЕМ
+    if (gameState === 'credits') {
+        hotlineCtx.fillStyle = "#050510"; hotlineCtx.fillRect(0, 0, hotlineCanvas.width, hotlineCanvas.height);
+        
+        hotlineCtx.strokeStyle = "rgba(255, 255, 255, 0.3)"; hotlineCtx.lineWidth = 2;
+        rainDrops.forEach(r => {
+            r.y += r.speed; r.x -= r.speed/2; 
+            if (r.y > hotlineCanvas.height) { r.y = -20; r.x = Math.random()*hotlineCanvas.width; }
+            hotlineCtx.beginPath(); hotlineCtx.moveTo(r.x, r.y); hotlineCtx.lineTo(r.x - 10, r.y + 20); hotlineCtx.stroke();
+        });
+
+        if (carX > -300) { carX -= 4; }
+        hotlineCtx.fillStyle = "#111"; hotlineCtx.fillRect(carX - 80, hotlineCanvas.height/2 - 30, 160, 60);
+        hotlineCtx.fillStyle = "#ff4757"; hotlineCtx.fillRect(carX - 80, hotlineCanvas.height/2 - 30, 20, 10); 
+
+        creditsY -= 1.5;
+        hotlineCtx.fillStyle = "white"; hotlineCtx.font = "bold 30px Arial"; hotlineCtx.textAlign = "center";
+        hotlineCtx.fillText("HOTLINE MIAMI", hotlineCanvas.width/2, creditsY);
+        hotlineCtx.font = "20px Arial";
+        hotlineCtx.fillText("Задание выполнено...", hotlineCanvas.width/2, creditsY + 50);
+        hotlineCtx.font = "bold 24px Arial";
+        hotlineCtx.fillText("Спасибо за прохождение!", hotlineCanvas.width/2, creditsY + 120);
+        hotlineCtx.fillStyle = "#f1c40f"; 
+        hotlineCtx.font = "bold 26px Arial";
+        hotlineCtx.fillText("Создатель: @frjek", hotlineCanvas.width/2, creditsY + 170);
+        hotlineCtx.fillStyle = "white"; hotlineCtx.font = "18px Arial";
+        hotlineCtx.fillText("Ждите обновлений и новых игр!", hotlineCanvas.width/2, creditsY + 220);
+        
+        if (creditsY < -250) { creditsY = hotlineCanvas.height; } 
+
+        hotlineAnim = requestAnimationFrame(loop);
+    }
   }
-  
-  buildFloor(); 
   loop();
 }
-</script>
+ </script>
 </body>
 </html>
