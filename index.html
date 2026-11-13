@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -718,7 +719,6 @@ function startMinecraft() {
   let hlWeapon = "Pistol", hlScore = 0, hlFloor = 1;
   
   let joyL = { x: 0, y: 0 }, joyR = { x: 0, y: 0 };
-  
   let gameState = 'car'; 
   let carX = -200; 
   let rainDrops = [];
@@ -760,12 +760,10 @@ function startMinecraft() {
     hlBullets.push({ x: hlPlayer.x, y: hlPlayer.y, vx: Math.cos(hlPlayer.angle)*15, vy: Math.sin(hlPlayer.angle)*15, from: 'player' });
   }
 
-  // --- ГЕНЕРАЦИЯ УРОВНЯ ---
   function buildFloor() {
     hlWalls = []; hlDoors = []; hlGlass = []; hlPickups = []; hlBullets = []; hlEnemies = []; hlScore = 0;
     document.getElementById('hlScore').textContent = 0;
-    document.getElementById('hlFloor').textContent = hlFloor; 
-    
+    document.getElementById('hlFloor').textContent = hlFloor;
     let w = hotlineCanvas.width, h = hotlineCanvas.height;
     
     for(let i=0; i<w; i+=20) { hlWalls.push({x: i, y: 20}); hlWalls.push({x: i, y: h - 20}); }
@@ -774,39 +772,23 @@ function startMinecraft() {
     if (hlFloor === 1 || hlFloor === 2) {
         for(let i=100; i<h-100; i+=20) { if (i < h/2 - 50 || i > h/2 + 50) hlWalls.push({x: w/2, y: i}); }
         hlDoors.push({x: w/2, y: 150}, {x: w/2, y: 170});
-        hlGlass.push({x: 100, y: 100}, {x: 120, y: 100});
     } else if (hlFloor === 3 || hlFloor === 4) {
         for(let i=100; i<h-100; i+=20) { if (i < h/2 - 40 || i > h/2 + 40) hlWalls.push({x: w/2, y: i}); }
         for(let i=100; i<w-100; i+=20) { if (i < w/2 - 40 || i > w/2 + 40) hlWalls.push({x: i, y: h/2}); }
         hlDoors.push({x: w/2, y: h/2 - 80}, {x: w/2, y: h/2 + 80});
-        hlGlass.push({x: w/2 - 80, y: h/2}, {x: w/2 + 80, y: h/2});
-    } else if (hlFloor === 5 || hlFloor === 6) {
-        for(let i=100; i<h-100; i+=20) { if (i % 60 !== 0) hlWalls.push({x: w/3, y: i}); }
-        for(let i=100; i<h-100; i+=20) { if (i % 60 !== 0) hlWalls.push({x: 2*w/3, y: i}); }
-        hlDoors.push({x: w/3, y: 200}, {x: 2*w/3, y: 300});
-        hlGlass.push({x: 100, y: h/3}, {x: w-100, y: 2*h/3});
     } else {
         for(let i=100; i<h-100; i+=20) { hlWalls.push({x: w/4, y: i}); hlWalls.push({x: 3*w/4, y: i}); }
         for(let i=100; i<w-100; i+=20) { hlWalls.push({x: i, y: h/4}); hlWalls.push({x: i, y: 3*h/4}); }
-        hlDoors.push({x: w/4, y: h/2}, {x: 3*w/4, y: h/2}, {x: w/2, y: h/4}, {x: w/2, y: 3*h/4});
-        hlGlass.push({x: w/4, y: h/4}, {x: 3*w/4, y: 3*h/4});
+        hlDoors.push({x: w/4, y: h/2}, {x: 3*w/4, y: h/2});
     }
 
-    if (hlFloor < 10) hlStairs = {x: w - 60, y: h - 60};
-    else hlStairs = null; 
+    if (hlFloor < 10) hlStairs = {x: w - 60, y: h - 60}; else hlStairs = null; 
 
-    let enemyCount = 3 + Math.floor(hlFloor * 1.5);
-    let enemySpeed = 1.2 + (hlFloor * 0.15);
-    let enemyTypes = ["Pistol", "Shotgun", "SMG", "Knife"];
-
-    for(let i=0; i<enemyCount; i++) { 
-        let enWeapon = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
-        let spawnX, spawnY;
-        do { spawnX = 150 + Math.random() * (w - 300); spawnY = 150 + Math.random() * (h - 300); } while (Math.hypot(spawnX - 60, spawnY - 60) < 250);
-        hlEnemies.push({ x: spawnX, y: spawnY, r: 12, speed: enemySpeed, alive: true, weapon: enWeapon, state: 'patrol', patrolTimer: 0, dir: Math.random() * Math.PI * 2 }); 
+    for(let i=0; i<3 + Math.floor(hlFloor * 1.5); i++) { 
+        let sx, sy; do { sx = 150 + Math.random() * (w - 300); sy = 150 + Math.random() * (h - 300); } while (Math.hypot(sx - 60, sy - 60) < 250);
+        hlEnemies.push({ x: sx, y: sy, r: 12, speed: 1.2 + (hlFloor * 0.15), alive: true, weapon: ["Pistol", "Shotgun", "SMG", "Knife"][Math.floor(Math.random()*4)], state: 'patrol', patrolTimer: 0, dir: Math.random() * Math.PI * 2 }); 
     }
-    
-    hlWalls = hlWalls.filter(wall => !hlDoors.some(d => d.x === wall.x && d.y === wall.y) && !hlGlass.some(g => g.x === wall.x && g.y === wall.y));
+    hlWalls = hlWalls.filter(wall => !hlDoors.some(d => d.x === wall.x && d.y === wall.y));
     hlPlayer.x = 60; hlPlayer.y = 60; 
   }
 
@@ -815,14 +797,11 @@ function startMinecraft() {
     for(let door of hlDoors) { if (Math.hypot(door.x - x, door.y - y) < 20 + r) return true; } 
     return false; 
   }
-
-  // --- ИГРОВОЙ ЦИКЛ ---
-  cancelAnimationFrame(hotlineAnim);
+    cancelAnimationFrame(hotlineAnim);
   function loop() {
     if (hotlineGameOver) return;
     hotlineCtx.fillStyle = "#111"; hotlineCtx.fillRect(0, 0, hotlineCanvas.width, hotlineCanvas.height);
     
-    // 1. АНИМАЦИЯ ПРИЕЗДА
     if (gameState === 'car') {
         carX += 3; hotlineCtx.fillStyle = "#000"; hotlineCtx.fillRect(carX, hotlineCanvas.height/2 - 30, 160, 60);
         hotlineCtx.fillStyle = "#555"; hotlineCtx.fillRect(carX + 20, hotlineCanvas.height/2 - 25, 120, 50); 
@@ -832,7 +811,6 @@ function startMinecraft() {
         hotlineAnim = requestAnimationFrame(loop); return;
     }
 
-    // 2. ИГРА / ПОБЕГ
     if (gameState === 'play' || gameState === 'escape') {
         let nextX = hlPlayer.x + joyL.x * hlPlayer.speed; let nextY = hlPlayer.y + joyL.y * hlPlayer.speed;
         if (!checkWallCollision(nextX, hlPlayer.y, hlPlayer.r)) hlPlayer.x = nextX;
@@ -844,22 +822,9 @@ function startMinecraft() {
             
             hlEnemies.forEach(en => { 
                 if (!en.alive) return; 
-                let dist = Math.hypot(en.x - hlPlayer.x, en.y - hlPlayer.y);
-                let angle = Math.atan2(hlPlayer.y - en.y, hlPlayer.x - en.x);
-                if (dist < 250) { 
-                    en.state = 'chase'; 
-                    let nx = en.x + Math.cos(angle) * en.speed, ny = en.y + Math.sin(angle) * en.speed;
-                    if(!checkWallCollision(nx, en.y, en.r)) en.x = nx;
-                    if(!checkWallCollision(en.x, ny, en.r)) en.y = ny;
-                    if (en.weapon !== "Knife" && (!en.lastShot || Date.now() - en.lastShot > 1000)) { hlBullets.push({ x: en.x, y: en.y, vx: Math.cos(angle)*8, vy: Math.sin(angle)*8, from: 'enemy' }); en.lastShot = Date.now(); } 
-                } 
-                else { 
-                    en.state = 'patrol'; en.patrolTimer++; 
-                    if (en.patrolTimer > 60) { en.dir = Math.random() * Math.PI * 2; en.patrolTimer = 0; } 
-                    let nx = en.x + Math.cos(en.dir) * 0.8, ny = en.y + Math.sin(en.dir) * 0.8; 
-                    if (checkWallCollision(nx, en.y, en.r) || checkWallCollision(en.x, ny, en.r)) en.dir += Math.PI; 
-                    else { en.x = nx; en.y = ny; } 
-                }
+                let dist = Math.hypot(en.x - hlPlayer.x, en.y - hlPlayer.y); let angle = Math.atan2(hlPlayer.y - en.y, hlPlayer.x - en.x);
+                if (dist < 250) { en.state = 'chase'; if(!checkWallCollision(en.x + Math.cos(angle)*en.speed, en.y, en.r)) en.x += Math.cos(angle)*en.speed; if(!checkWallCollision(en.x, en.y + Math.sin(angle)*en.speed, en.r)) en.y += Math.sin(angle)*en.speed; if (en.weapon !== "Knife" && (!en.lastShot || Date.now() - en.lastShot > 1000)) { hlBullets.push({ x: en.x, y: en.y, vx: Math.cos(angle)*8, vy: Math.sin(angle)*8, from: 'enemy' }); en.lastShot = Date.now(); } } 
+                else { en.patrolTimer++; if (en.patrolTimer > 60) { en.dir = Math.random() * Math.PI * 2; en.patrolTimer = 0; } if(!checkWallCollision(en.x + Math.cos(en.dir)*0.8, en.y, en.r) && !checkWallCollision(en.x, en.y + Math.sin(en.dir)*0.8, en.r)) { en.x += Math.cos(en.dir)*0.8; en.y += Math.sin(en.dir)*0.8; } else en.dir += Math.PI; }
                 if (dist < en.r + hlPlayer.r) { playDeath(); hotlineGameOver = true; document.getElementById('hotlineOver').style.display = 'flex'; }
             });
 
@@ -868,95 +833,48 @@ function startMinecraft() {
               if (checkWallCollision(b.x, b.y, 2)) { hlBullets.splice(i, 1); continue; }
               for (let j = hlDoors.length - 1; j >= 0; j--) { if (Math.hypot(hlDoors[j].x - b.x, hlDoors[j].y - b.y) < 20) { hlDoors.splice(j, 1); hlBullets.splice(i, 1); playTone(200, 'square', 0.1); break; } }
               if(!hlBullets[i]) continue;
-              for (let j = hlGlass.length - 1; j >= 0; j--) { if (Math.hypot(hlGlass[j].x - b.x, hlGlass[j].y - b.y) < 20) { hlGlass.splice(j, 1); hlBullets.splice(i, 1); playTone(900, 'sine', 0.1); break; } }
-              if(!hlBullets[i]) continue;
-              
               if (b.from === 'player') { for (let en of hlEnemies) { if (!en.alive) continue; if (Math.hypot(en.x - b.x, en.y - b.y) < en.r) { en.alive = false; hlBullets.splice(i, 1); hlScore++; document.getElementById('hlScore').textContent = hlScore; hlPickups.push({x: en.x, y: en.y, type: en.weapon}); break; } } }
               else if (b.from === 'enemy') { if (Math.hypot(hlPlayer.x - b.x, hlPlayer.y - b.y) < hlPlayer.r + 4) { playDeath(); hotlineGameOver = true; document.getElementById('hotlineOver').style.display = 'flex'; } }
             }
 
-            if (hlFloor === 10 && hlEnemies.every(en => !en.alive)) {
-                gameState = 'escape';
-                hlExitCar = { x: 80, y: hotlineCanvas.height - 80 }; 
-            }
+            if (hlFloor === 10 && hlEnemies.every(en => !en.alive)) { gameState = 'escape'; hlExitCar = { x: 80, y: hotlineCanvas.height - 80 }; }
         }
 
-        if (gameState === 'escape') {
-            if (hlExitCar && Math.hypot(hlExitCar.x - hlPlayer.x, hlExitCar.y - hlPlayer.y) < 50) {
-                gameState = 'credits';
-                carX = hlExitCar.x;
-                playTone(100, 'sawtooth', 1); 
-                for(let i=0; i<100; i++) { rainDrops.push({x: Math.random()*hotlineCanvas.width, y: Math.random()*hotlineCanvas.height, speed: 10 + Math.random()*10}); }
-            }
+        if (gameState === 'escape' && hlExitCar && Math.hypot(hlExitCar.x - hlPlayer.x, hlExitCar.y - hlPlayer.y) < 50) {
+            gameState = 'credits'; carX = hlExitCar.x; playTone(100, 'sawtooth', 1); 
+            for(let i=0; i<100; i++) { rainDrops.push({x: Math.random()*hotlineCanvas.width, y: Math.random()*hotlineCanvas.height, speed: 10 + Math.random()*10}); }
         }
 
-        // Отрисовка игрового процесса
         hotlineCtx.fillStyle = "#222"; hotlineCtx.fillRect(0, 0, hotlineCanvas.width, hotlineCanvas.height);
-        if (gameState === 'escape') {
-            hotlineCtx.fillStyle = "#ff4757"; hotlineCtx.font = "bold 20px Arial"; hotlineCtx.textAlign = "center";
-            hotlineCtx.fillText("ЗАДАНИЕ ВЫПОЛНЕНО! ВЕРНИСЬ К МАШИНЕ (ВНИЗУ)", hotlineCanvas.width/2, 50);
-            hotlineCtx.textAlign = "left"; 
-        }
-
+        if (gameState === 'escape') { hotlineCtx.fillStyle = "#ff4757"; hotlineCtx.font = "bold 20px Arial"; hotlineCtx.textAlign = "center"; hotlineCtx.fillText("ЗАДАНИЕ ВЫПОЛНЕНО! ВЕРНИСЬ К МАШИНЕ", hotlineCanvas.width/2, 50); hotlineCtx.textAlign = "left"; }
+        
         hotlineCtx.fillStyle = "#555"; hlWalls.forEach(w => hotlineCtx.fillRect(w.x - 10, w.y - 10, 20, 20));
         hotlineCtx.fillStyle = "#8B4513"; hlDoors.forEach(d => hotlineCtx.fillRect(d.x - 10, d.y - 10, 20, 20));
-        hotlineCtx.fillStyle = "rgba(52, 152, 219, 0.5)"; hlGlass.forEach(g => hotlineCtx.fillRect(g.x - 10, g.y - 10, 20, 20));
-        if(hlStairs) { hotlineCtx.fillStyle = "#f1c40f"; hotlineCtx.fillRect(hlStairs.x - 15, hlStairs.y - 15, 30, 30); hotlineCtx.fillStyle = "#333"; for(let i=0; i<3; i++) hotlineCtx.fillRect(hlStairs.x - 15, hlStairs.y - 10 + i*8, 30, 3); }
-        
-        if(hlExitCar) {
-            hotlineCtx.fillStyle = "#000"; hotlineCtx.fillRect(hlExitCar.x - 80, hlExitCar.y - 30, 160, 60);
-            hotlineCtx.fillStyle = "#555"; hotlineCtx.fillRect(hlExitCar.x - 60, hlExitCar.y - 25, 120, 50); 
-            hotlineCtx.fillStyle = "#222"; hotlineCtx.beginPath(); hotlineCtx.arc(hlExitCar.x - 40, hlExitCar.y + 30, 15, 0, Math.PI*2); hotlineCtx.fill(); hotlineCtx.beginPath(); hotlineCtx.arc(hlExitCar.x + 40, hlExitCar.y + 30, 15, 0, Math.PI*2); hotlineCtx.fill();
-        }
-
+        if(hlStairs) { hotlineCtx.fillStyle = "#f1c40f"; hotlineCtx.fillRect(hlStairs.x - 15, hlStairs.y - 15, 30, 30); }
+        if(hlExitCar) { hotlineCtx.fillStyle = "#000"; hotlineCtx.fillRect(hlExitCar.x - 80, hlExitCar.y - 30, 160, 60); }
         hotlineCtx.fillStyle = "#2ed573"; hlPickups.forEach(p => hotlineCtx.fillRect(p.x - 5, p.y - 5, 10, 10));
-        hlEnemies.forEach(en => { 
-            if(en.alive) { 
-                hotlineCtx.save(); hotlineCtx.translate(en.x, en.y); hotlineCtx.fillStyle = "#ff4757"; hotlineCtx.fillRect(-10, -10, 20, 20); hotlineCtx.fillStyle = "#f1c27d"; hotlineCtx.beginPath(); hotlineCtx.arc(0, 0, 6, 0, Math.PI*2); hotlineCtx.fill(); hotlineCtx.font = "16px Arial"; hotlineCtx.textAlign = "center"; hotlineCtx.textBaseline = "middle"; let eGun = (en.weapon === "Shotgun") ? "💥" : (en.weapon === "Knife" ? "🔪" : "🔫"); hotlineCtx.fillText(eGun, 14, 0); hotlineCtx.restore();
-            } 
-        });
+        
+        hlEnemies.forEach(en => { if(en.alive) { hotlineCtx.fillStyle = "#ff4757"; hotlineCtx.fillRect(en.x - 10, en.y - 10, 20, 20); hotlineCtx.fillStyle = "#f1c27d"; hotlineCtx.beginPath(); hotlineCtx.arc(en.x, en.y, 6, 0, Math.PI*2); hotlineCtx.fill(); hotlineCtx.font = "16px Arial"; hotlineCtx.fillText(en.weapon === "Shotgun" ? "💥" : (en.weapon === "Knife" ? "🔪" : "🔫"), en.x + 14, en.y + 5); } });
         hotlineCtx.fillStyle = "#f1c40f"; hlBullets.forEach(b => { hotlineCtx.beginPath(); hotlineCtx.arc(b.x, b.y, 4, 0, Math.PI*2); hotlineCtx.fill(); });
 
         hotlineCtx.save(); hotlineCtx.translate(hlPlayer.x, hlPlayer.y); hotlineCtx.rotate(hlPlayer.angle);
-        hotlineCtx.fillStyle = "#2ed573"; hotlineCtx.fillRect(-10, -10, 20, 20);
-        hotlineCtx.fillStyle = "#f1c27d"; hotlineCtx.beginPath(); hotlineCtx.arc(0, 0, 6, 0, Math.PI*2); hotlineCtx.fill();
-        hotlineCtx.font = "20px Arial"; hotlineCtx.textAlign = "center"; hotlineCtx.textBaseline = "middle";
-        let gunEmoji = (hlWeapon === "Shotgun") ? "💥" : (hlWeapon === "Knife" ? "🔪" : "🔫"); hotlineCtx.fillText(gunEmoji, 18, 0); 
+        hotlineCtx.fillStyle = "#2ed573"; hotlineCtx.fillRect(-10, -10, 20, 20); hotlineCtx.fillStyle = "#f1c27d"; hotlineCtx.beginPath(); hotlineCtx.arc(0, 0, 6, 0, Math.PI*2); hotlineCtx.fill();
+        hotlineCtx.font = "20px Arial"; hotlineCtx.fillText(hlWeapon === "Shotgun" ? "💥" : (hlWeapon === "Knife" ? "🔪" : "🔫"), 18, 5); 
         hotlineCtx.restore();
-
         hotlineAnim = requestAnimationFrame(loop);
     }
 
-    // 3. ТИТРЫ С ДОЖДЕМ
     if (gameState === 'credits') {
         hotlineCtx.fillStyle = "#050510"; hotlineCtx.fillRect(0, 0, hotlineCanvas.width, hotlineCanvas.height);
-        
         hotlineCtx.strokeStyle = "rgba(255, 255, 255, 0.3)"; hotlineCtx.lineWidth = 2;
-        rainDrops.forEach(r => {
-            r.y += r.speed; r.x -= r.speed/2; 
-            if (r.y > hotlineCanvas.height) { r.y = -20; r.x = Math.random()*hotlineCanvas.width; }
-            hotlineCtx.beginPath(); hotlineCtx.moveTo(r.x, r.y); hotlineCtx.lineTo(r.x - 10, r.y + 20); hotlineCtx.stroke();
-        });
-
-        if (carX > -300) { carX -= 4; }
+        rainDrops.forEach(r => { r.y += r.speed; r.x -= r.speed/2; if (r.y > hotlineCanvas.height) { r.y = -20; r.x = Math.random()*hotlineCanvas.width; } hotlineCtx.beginPath(); hotlineCtx.moveTo(r.x, r.y); hotlineCtx.lineTo(r.x - 10, r.y + 20); hotlineCtx.stroke(); });
+        if (carX > -300) carX -= 4;
         hotlineCtx.fillStyle = "#111"; hotlineCtx.fillRect(carX - 80, hotlineCanvas.height/2 - 30, 160, 60);
-        hotlineCtx.fillStyle = "#ff4757"; hotlineCtx.fillRect(carX - 80, hotlineCanvas.height/2 - 30, 20, 10); 
-
-        creditsY -= 1.5;
-        hotlineCtx.fillStyle = "white"; hotlineCtx.font = "bold 30px Arial"; hotlineCtx.textAlign = "center";
+        creditsY -= 1.5; hotlineCtx.fillStyle = "white"; hotlineCtx.font = "bold 30px Arial"; hotlineCtx.textAlign = "center";
         hotlineCtx.fillText("HOTLINE MIAMI", hotlineCanvas.width/2, creditsY);
-        hotlineCtx.font = "20px Arial";
-        hotlineCtx.fillText("Задание выполнено...", hotlineCanvas.width/2, creditsY + 50);
-        hotlineCtx.font = "bold 24px Arial";
         hotlineCtx.fillText("Спасибо за прохождение!", hotlineCanvas.width/2, creditsY + 120);
-        hotlineCtx.fillStyle = "#f1c40f"; 
-        hotlineCtx.font = "bold 26px Arial";
-        hotlineCtx.fillText("Создатель: @frjek", hotlineCanvas.width/2, creditsY + 170);
-        hotlineCtx.fillStyle = "white"; hotlineCtx.font = "18px Arial";
-        hotlineCtx.fillText("Ждите обновлений и новых игр!", hotlineCanvas.width/2, creditsY + 220);
-        
-        if (creditsY < -250) { creditsY = hotlineCanvas.height; } 
-
+        hotlineCtx.fillStyle = "#f1c40f"; hotlineCtx.fillText("Создатель: @frjek", hotlineCanvas.width/2, creditsY + 170);
+        if (creditsY < -250) creditsY = hotlineCanvas.height; 
         hotlineAnim = requestAnimationFrame(loop);
     }
   }
